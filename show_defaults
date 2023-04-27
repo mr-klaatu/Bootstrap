@@ -1,0 +1,237 @@
+#!/usr/bin/env bash
+license_terms() {
+  cat <<EOF_MIT_LICENSE_TERMS
+The MIT License (MIT)
+
+Copyright (c) 2014 Damien Nozay
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+EOF_MIT_LICENSE_TERMS
+}
+
+__SCRIPT_VERSION="0.1"
+__SCRIPT_REPOSITORY="https://github.com/dnozay/osx-defaults"
+version_info() {
+  cat <<EOF_VERSION
+version ${__SCRIPT_VERSION} (repo: ${__SCRIPT_REPOSITORY})
+EOF_VERSION
+}
+
+# inspired greatly by the .osx dotfiles script.
+# ~/.osx — https://mths.be/osx
+# https://github.com/mathiasbynens/dotfiles
+
+# to colorize output.
+_RESET="\033[0m"
+_BOLD="\033[1m"
+_BLACK="\033[30m"
+_RED="\033[31m"
+_GREEN="\033[32m"
+_YELLOW="\033[33m"
+
+usage() {
+    cat <<EOFUSAGE
+  $0 [key]
+  $0 --list
+  $0 --help
+
+  This script reads configuration settings stored in various places.
+  One obvious purpose is to inform the user about how the machine is currently
+  configured so that if the user decides to change any setting, they may be
+  able to first store/output the setting as a precaution.
+
+  Arguments:
+      key          Name of the setting to read.
+                   Use --list to check which settings are available.
+
+  Options:
+      --help       Bring up this usage screen.
+      --list       List all keys.
+      --license    Output license terms.
+      --version    Output version information.
+      --all        Reads all settings.
+
+EOFUSAGE
+}
+
+#
+# helper methods to read settings
+#
+
+_SCUTIL="${_RED}[scutil]${_RESET}"
+_PMSET="${_RED}[pmset]${_RESET}"
+_DEFAULTS="${_RED}[defaults]${_RESET}"
+_NVRAM="${_RED}[nvram]${_RESET}"
+
+
+read_scutil() {
+  name=$1
+  scutil --get $name
+}
+
+describe_scutil() {
+  name=$1
+  description=$2
+  value=$(read_scutil $name 2>/dev/null)
+  if test -n "$value"; then
+    echo -e "${_SCUTIL}${_KEYARG} ${description} is set to ${_YELLOW}${value}${_RESET}."
+  else
+    echo -e "${_SCUTIL}${_KEYARG} ${description} is ${_RED}not set${_RESET}."
+  fi
+}
+
+read_defaults() {
+  domain=$1
+  key=$2
+  defaults read $domain $key
+}
+
+describe_defaults() {
+  domain=$1
+  key=$2
+  description=$3
+  value=$(read_defaults $domain $key 2>/dev/null)
+  if test -n "$value"; then
+    echo -e "${_DEFAULTS}${_KEYARG} ${description} is set to ${_YELLOW}${value}${_RESET}."
+  else
+    echo -e "${_DEFAULTS}${_KEYARG} ${description} is ${_RED}not set${_RESET}."
+  fi
+}
+
+#
+# filters
+#
+
+parse_boolean() {
+  read value
+  case "$value" in
+    (T|t|true|1)
+      echo true;;
+    (F|f|false|0)
+      echo false;;
+    (*)
+      # unsure.
+      echo "$value ???";;
+  esac
+}
+
+parse_seconds() {
+  read value;
+  __seconds=$(expr $value % 60)
+  __minutes=$(expr $value / 60 % 60)
+  __hours=$(expr $value / 3600)
+  echo "${__hours}h ${__minutes}m ${__seconds}s"
+}
+
+#
+# options/argument parsing.
+#
+
+_mainscript=$0
+_keyarg=$1
+_KEYARG="${_BLACK}(${_keyarg})${_RESET}"
+
+list_keys() {
+  grep "#[ ]list-key\$" $_mainscript | perl -n -e'/\((.*)\)/ && print "$1\n" '
+}
+
+case "$1" in
+  (--help|"")
+    usage;;
+
+  (--license)
+    license_terms;;
+
+  (--version)
+    version_info;;
+
+  (--list)
+    list_keys;;
+
+  (--all)
+    for key in $(list_keys); do
+      $_mainscript $key;
+    done
+    ;;
+
+#
+# NOTE: please finish the line with "# list-key" for it to be listed properly
+#
+
+#
+# System specific.
+#
+
+  (sys.computername) # list-key
+    describe_scutil "ComputerName" "ComputerName";;
+
+  (sys.hostname) # list-key
+    describe_scutil "HostName" "HostName";;
+
+  (sys.localhostname) # list-key
+    describe_scutil "LocalHostName" "LocalHostName";;
+
+  (sys.netbiosname) # list-key
+    describe_defaults "/Library/Preferences/SystemConfiguration/com.apple.smb.server" "NetBIOSName" "NetBIOSName";;
+
+  (sys.live.standbydelay) # list-key
+    __standbydelay=$(pmset -g live | grep standbydelay | awk '{print $2}')
+    __standbydelay_human=$(echo ${__standbydelay} | parse_seconds)
+    echo -e "${_PMSET}${_KEYARG} Live stand-by delay is set to ${_BOLD}${__standbydelay}${_RESET} (${_YELLOW}${__standbydelay_human}${_RESET})."
+    ;;
+
+  (sys.nvram.systemaudiovolume) # list-key
+    __nvram_systemaudiovolume=$(nvram SystemAudioVolume | awk '{print $2}')
+    __nvram_systemaudiovolume_human=$(echo ${__nvram_systemaudiovolume} | parse_boolean)
+    echo -e "${_NVRAM}${_KEYARG} System audio volume is set to ${_BOLD}${__nvram_systemaudiovolume}${_RESET} (${_YELLOW}${__nvram_systemaudiovolume_human}${_RESET})."
+    ;;
+
+#
+# UI
+#
+  (ui.transparency) # list-key
+    describe_defaults "com.apple.universalaccess" "reduceTransparency" "UI transparency";;
+
+  (ui.highlightcolor) # list-key
+    describe_defaults "NSGlobalDomain" "AppleHighlightColor" "Highlight color";;
+
+  (ui.sidebar.iconsize) # list-key
+    describe_defaults "NSGlobalDomain" "NSTableViewDefaultSizeMode" "Sidebar Icon Size";;
+
+  (ui.scrollbars) # list-key
+    describe_defaults "NSGlobalDomain" "AppleShowScrollBars" "Scrollbars behavior";;
+
+  (ui.smoothscrolling) # list-key
+    describe_defaults "NSGlobalDomain" "NSScrollAnimationEnabled" "Smooth Scrolling";;
+
+#
+# handle unrecognized options / arguments.
+# this needs to stay last.
+#
+
+  (-*)
+    echo -en "${_RED}Unrecognized option:${_RESET} "; echo $1; echo;
+    usage; exit 1;;
+
+  (*)
+    echo -en "${_RED}Unrecognized key:${_RESET} "; echo $1; echo;
+    usage; exit 1;;
+esac

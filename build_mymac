@@ -1,0 +1,325 @@
+#!/bin/zsh
+# Script to intall useful OSX Options and Utilities to create PHP Development Environment
+#
+
+#############
+# TODO
+#############
+# TODO 1. Create functons for each area of fuctionality so the script can be called to do a single task for example rebuild the symlinks.
+# TODO 2. Place all the lists in an external file so the script need not be edited to change things.
+
+#############
+# INITIALISE
+#############
+
+# environment for these scripts and utilities
+BOOTENV=${HOME}/Developer/Bootstrap
+
+# date for this backup 
+BCKDATE=`date +%Y%m%d%H%M`
+
+# list of all dotfiles in use 
+DOTFILES=('brewrc.sh' 'gitconfig.sh' 'gorc.sh' 'osxrc.sh' 'vimrc.sh' 'zshrc.sh' 'aliasrc.sh')
+
+# Add settings for HOMEBREW
+if [ `uname -p | grep -i arm` ] 
+then
+	logger "Setting build environment to ARM" I
+	export Architecture=Arm
+	export BREWROOT=/opt/homebrew
+else
+	logger "Setting build environment to INTEL" I
+	export Architecture=Intel
+	export BREWROOT=/usr/local
+fi
+
+# Set the colours you can use
+black='\033[0;30m'
+white='\033[0;37m'
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+blue='\033[0;34m'
+magenta='\033[0;35m'
+cyan='\033[0;36m'
+
+# Resets the style
+reset=`tput sgr0`
+
+# Color-echo. 
+# arg $1 = message
+# arg $2 = Color
+logger() {
+
+	if [ -z "$1" ]; then echo ""; return; fi
+	if [ -z "$2" ]; then colour=${green} prefix="-?-"; fi
+	if [ "$2" = "E" ]; then colour=${red} prefix="-E-"; fi
+	if [ "$2" = "W" ]; then colour=${yellow} prefix="-W-"; fi
+	if [ "$2" = "I" ]; then colour=${green} prefix="-I-"; fi
+
+	echo -e "${colour}${prefix} ${1}${reset}"
+	return
+}
+
+# First determine the current directory, this script can only be run form ${HOME}/Developer/Dotfiles.
+#
+CURR_PATH=`pwd`
+NEED_PATH=`echo ${HOME}/Developer/Bootstrap`
+
+if [[ $CURR_PATH != $NEED_PATH ]]
+then
+	logger "ERROR This script must be run from ${HOME}/Developer/Dotfiles" E
+	exit 1
+fi
+
+logger
+logger "###############################################" E
+logger "#        DO NOT RUN THIS SCRIPT BLINDLY       #" E
+logger "#         YOU'LL PROBABLY REGRET IT...        #" E
+logger "#                                             #" E
+logger "#              READ IT THOROUGHLY             #" E
+logger "#         AND EDIT TO SUIT YOUR NEEDS         #" E
+logger "###############################################" E
+logger
+
+logger "Have you read through the script you're about to run and " W
+logger "understood that it will make changes to your computer? (y/n)" W
+read "reply?Continue? (y/n) "
+if [[ "$reply" =~ ^[nN]$ ]]; then
+  # Check if we're continuing and output a message if not
+  logger "Please go read the script, it only takes a few minutes" I
+  exit
+fi
+
+logger "Running on $Architecture Architecture" I
+logger "Current default SHELL is $SHELL" I
+
+#Install Mac Xcode Command Line tools
+if type xcode-select >&- && xpath=$( xcode-select --print-path ) &&
+	test -d "${xpath}" && test -x "${xpath}" ; then
+	#... is correctly installed
+	#
+	logger "Commandline tools have been installed, see path below..." I
+else
+   	#... isn't correctly installed
+	#
+	logger "First install commandline tools" I
+	xcode-select —-install
+fi
+#
+
+#Validate command line tools installation
+xcode-select -p
+
+#
+# Promt user and find out if this script needs to delete all the Mac customisation ?
+#
+logger "some commands need SUDO access, please enter that now" W
+
+read "sudoPW?Enter Password for sudo: "
+
+read "reply?Delete old installations of software like zsh, ohmyzsh, homebrew etc? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+
+	logger "Here we go..." I
+
+	logger "Deleting HomeBrew Installation" I
+	if [ ! -d ${BREWROOT} ]
+	then
+		logger "Brew is not installed" W
+	else
+		logger "Brew being uninstalled" I
+		echo $sudoPW | sudo -S /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall.sh)"
+		echo $sudoPW | sudo -S /bin/rm -rf ${BREWROOT}
+	fi
+
+	logger "Deleting OhMyZSH Installation" I
+ 	if [ -d ${HOME}/.oh-my-zsh ] 
+	then
+		logger "OhMyZSH is being uninstalled" I
+		echo $sudoPW | sudo -S /bin/rm -rf ~/.oh-my-zsh
+		/bin/rm ~/.zshrc
+		ln -sf "${BOOTENV}/default_zshrc.sh" "${HOME}/.zshrc" 
+		source ~/.zshrc
+	else
+		logger "OhMyZSH is not installed" W
+	fi
+
+	if [ "${SHELL}" != "/bin/zsh" ]; then
+		logger "Resetting shell back to Mac Supplied version of ZSH" I
+		echo $sudoPW | sudo -S chsh -s /bin/zsh david
+	fi
+
+	logger "deleting symlinks to runtime files" I
+	for file in "${DOTFILES[@]}"
+	do
+		if [[ -L ${HOME}/.${file%%.*} ]]; then
+			logger "Removing old link ${HOME}/.${file%%.*}" W
+			unlink ${HOME}/.${file%%.*}
+		fi
+	done
+
+	CURRENT_SHELL=`which zsh`
+	logger "Current default SHELL is ${CURRENT_SHELL}" I
+	zsh --version
+
+	logger "Complete" I
+	
+fi
+
+logger
+logger "###############################################" E
+logger "#        You have restored the system to      #" E
+logger "#              standard Apple OSX             #" E
+logger "###############################################" E
+logger
+
+logger "You can Exit now or Continue to install HomeBrew etc" W
+read "reply?Continue? (y/n) "
+if [[ "$reply" =~ ^[nN]$ ]]; then
+  # Check if we're continuing and output a message if not
+  logger "Start the script again to install the Homebrew Environment" I
+  logger "Please exit this shell and start a new one to see the effect of your actions" I
+  exit
+fi
+
+logger "We are about to install HomeBrew etc" W
+
+#Install Homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)".
+
+#Validate HomeBrew
+if [ "${Architecture}" = "Arm" ]
+then
+	echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
+	eval "$(/opt/homebrew/bin/brew shellenv)"  
+else
+	echo 'eval "$(/usr/local/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
+	eval "$(/usr/local/bin/brew shellenv)" n
+fi
+export CPATH=${BREWROOT}/include
+export LIBRARY_PATH=${BREWROOT}/libn
+export PATH=/usr/local/sbin:${PATH}
+
+logger "Sourcing the new brewrc.sh file, to make brew work correctly." I
+source ${BOOTENV}/brewrc.sh
+
+logger "Running 'brew install' to install our software." I
+#Install some useful stuff
+brew install zsh nvim git
+brew install wget nmap geoip watch figlet
+brew install golang neofetch
+
+logger "Quick tidy up of the brew environment." I
+brew update
+brew cleanup
+brew upgrade
+brew doctor
+
+logger "You can configure git or leave the existing config alone..." W
+read "reply?Configure? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	git config --global color.ui true
+	git config --global user.name "David Cheetham"
+	git config --global user.email "mr_klaatu.com"
+	ssh-keygen -t rsa -C "mr_klaatu.com"
+fi
+
+#
+logger "Delete old OhMyZsh rc files" I
+/bin/rm -f ${HOME}/.zshrc*
+
+logger "Now install OhMyZsh" I
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+
+logger "Now install OhMyZsh auto-suggestions plugin" I
+echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-autosuggestions ${HOME}/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-autosuggestions ]
+then
+    logger "Failed to install zsh-autosuggestions" E
+else
+    logger "Installed zsh-autosuggestions" I
+fi
+
+logger "Now install OhMyZsh zsh-syntax-highlighting plugin" I
+echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting ]
+then
+    logger "Failed to install zsh-syntax-highlighting" E
+else
+    logger "Installed zsh-syntax-highlighting" I
+fi
+
+logger "Now install OhMyZsh zsh-completions plugin" I
+echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:=~/.oh-my-zsh/custom}/plugins/zsh-completions
+if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-completions ]
+then
+    logger "Failed to install zsh-completions" E
+else
+    logger "Installed zsh-completions" I
+fi
+
+#
+echo $sudoPW | sudo -S dscl . -create /Users/$USER UserShell ${BREWROOT}/bin/zsh
+#
+logger "Shell set to Homebrew Supplied version of ZSH - ${BREWROOT}/bin/zsh" I
+
+
+logger "Do you want to install a PHP environment and Valet? (y/n)" W
+read "reply?Continue? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	#install valet
+
+	brew install php composer 
+
+	composer global require laravel/valet
+
+	valet install
+
+	#Setup Sites
+	if [ ! -d ${HOME}/Sites ]
+	then
+		logger "Creating ${HOME}/Sites directory" W
+		mkdir ${HOME}/Sites
+	else
+		logger "${HOME}/Sites directory already exists" I
+	fi
+
+	cd ${HOME}/Sites
+	valet park
+	valet secure laravel
+
+fi
+
+logger "Installing symlinks to runtime files" I
+for file in "${DOTFILES[@]}"
+do
+    if [[ -L ${HOME}/.${file%%.*} ]]; then
+		logger "Removing old link ${HOME}/.${file%%.*}" W
+		unlink ${HOME}/.${file%%.*}
+	fi
+	if [[ -L ${HOME}/.${file%%.*} ]]; then
+		logger "Removing old file ${HOME}/.${file%%.*}" W
+		rm -f ${HOME}/.${file%%.*}
+	fi
+	logger "Creating ${HOME}/.${file%%.*} linked to to ${BOOTENV}/${file}" I
+    ln -sf "${BOOTENV}/${file}" "${HOME}/.${file%%.*}" 
+done
+
+logger "Do you want to setup OSX defaults? (y/n)" W
+read "reply?Continue? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	${HOME}/.osxrc
+	logger
+	logger "${HOME}/.osxrc has been executed. Some changes will require a reboot." I
+	logger 
+fi
+
+source ${HOME}/.zshrc
+CURRENT_SHELL=`which zsh`
+logger "Current default SHELL is ${CURRENT_SHELL}" I
+zsh --version
+
+#
+logger "Exiting Script - we are done..." I
+exit 
