@@ -12,7 +12,7 @@ then
   alias zshconfig="vi ~/.zshrc"
   alias zshrc="vi ~/.zshrc"
   alias developer="cd ~/Developer"
-  alias botstrap="cd ~/Developer/Bootstrap"
+  alias bootstrap="cd ~/Developer/Bootstrap"
   alias sites="cd ~/Sites"
   alias src="cd $GOPATH/src"
   if [[ -n $BREW ]]
