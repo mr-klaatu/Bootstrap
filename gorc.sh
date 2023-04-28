@@ -1,5 +1,5 @@
 export GOPATH=$HOME/Develop/GO # don't forget to change your path correctly!
-export GOROOT=${BREWROOT}/opt/go/libexec
+export GOROOT=${HOMEBREW_ROOT}/opt/go/libexec
 export PATH=$PATH:$GOPATH/bin
 export PATH=$PATH:$GOROOT/bin
 

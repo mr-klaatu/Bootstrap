@@ -1,0 +1,36 @@
+BOOTENV=${HOME}/Developer/Bootstrap
+brewFile="${BOOTENV}/brew.cfg"
+
+trim() {
+    local var="$*"
+    # remove leading whitespace characters
+    var="${var#"${var%%[![:space:]]*}"}"
+    # remove trailing whitespace characters
+    var="${var%"${var##*[![:space:]]}"}"
+    printf '%s' "$var"
+}
+
+alias logger=echo
+
+while IFS= read -r application || [ -n "$application" ]
+do
+	case $application in
+		"#"*) 
+		   # hash found on line - no action
+		;;
+		"&"*) 
+		   # ampersand found on line - install as a cask item
+		   cask_application=`echo $application | sed -r 's/^&//'`
+           echo Installing CASK `echo $cask_application | xargs`
+		   # use xargs to trim the application name and install it...
+		   #brew install --cask `echo $cask_application | xargs`
+		;;
+		*) 
+		   echo Installing `trim "${application}"`
+		   # use xargs to trim the application name and install it...
+		   brew install `trim "${application}"`
+        ;;
+	esac
+done < "$brewFile"
+
+

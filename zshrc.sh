@@ -1,24 +1,35 @@
 #!/bin/zsh
 
+#  -----------------------------------------------------------------------------
+#  Useful information about zsh behaviour...
+#  -----------------------------------------------------------------------------
+#  /etc/zshenv    # Read for every shell
+#  ~/.zshenv      # Read for every shell except ones started with -f
+#  /etc/zprofile  # Global config for login shells, read before zshrc
+#  ~/.zprofile    # User config for login shells
+#  /etc/zshrc     # Global config for interactive shells
+#  ~/.zshrc       # User config for interactive shells
+#  /etc/zlogin    # Global config for login shells, read after zshrc
+#  ~/.zlogin      # User config for login shells
+#  ~/.zlogout     # User config for login shells, read upon logout
+#  /etc/zlogout   # Global config for login shells, read after user logout file
+#  -----------------------------------------------------------------------------
+
+
 unset BREW
 
 if [ `uname -p | grep -i arm` ] 
 then
 	export Architecture=Arm
   export ARCHFLAGS="-arch arm64"
+  export HOMEBREW_ROOT=/opt/homebrew
 else
 	export Architecture=Intel
   export ARCHFLAGS="-arch x86_64"
+  export HOMEBREW_ROOT=/usr/local
 fi
 
-if [[ "$Architecture" == "Arm" ]]
-then
-	export BREWROOT=/opt/homebrew
-else  
-	export BREWROOT=/usr/local
-fi
-
-if [ -d ${BREWROOT}/bin ]
+if [ -d ${HOMEBREW_ROOT}/bin ]
 then
     # We are running an enhanced Homebrew Environment... 
     export BREW="YES"
@@ -26,7 +37,7 @@ fi
 
 if [[ "$BREW" == "YES" ]]
 then
-  echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and BREWROOT of ${BREWROOT}..."
+  echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEBREW_ROOT of ${HOMEBREW_ROOT}..."
   #
   # All the code below runs using the capbilites of HOMEBREW addons.
   #
@@ -36,6 +47,7 @@ then
   if [ -f ${HOME}/.brewrc ]
   then
     source ${HOME}/.brewrc
+    echo "Homebrew Initialised"
   fi
 
   
@@ -116,20 +128,20 @@ then
   # Setup Ruby (if its installed)
   if (( $+commands[rbenv] ))
   then
-    if [ -f ~/.rubyrc ]
+    if [ -f ${HOME}/.rubyrc ]
     then
       rbenv init - > ~/.rubyrc
       echo "Ruby Initialised"
-      source ~/.rubyrc
+      source ${HOME}/.rubyrc
     fi
   fi
 
   # Setup nvm
   if (( $+commands[nvm] ))
   then
-    if [ -f ~/.nvmrc ]
+    if [ -f ${HOME}/.nvmrc ]
     then
-      source ~/.nvmrc
+      source ${HOME}/.nvmrc
       echo "NVM Initialised"
     fi
   fi
@@ -137,11 +149,11 @@ then
   # Setup jenv (if its installed)
   if (( $+commands[jenv] ))
   then
-    if [ -f ~/.jenvrc ]
+    if [ -f ${HOME}/.jenvrc ]
     then  
       jenv init - > ~/.jenvrc
       echo "JENV Initialised"
-      source ~/.jenvrc
+      source ${HOME}/.jenvrc
     fi
   fi    
 
@@ -174,6 +186,7 @@ export LANG=en_GB.UTF-8
 export DUMP_VHOSTS=/Users/david/Sites/var/log
 export DUMP_RUN_CFG=/Users/david/Sites/var/log 
 
+
 # WinterCMS Variables
 export APP_ENV=DEV
 
@@ -191,16 +204,16 @@ then
   #
   
   # Setup aliases
-  if [ -f ~/.aliasrc ]
+  if [ -f ${HOME}/.aliasrc ]
   then
-    source ~/.aliasrc
+    source ${HOME}/.aliasrc
     echo "Aliases Initialised"
   fi
 
   # Setup golang
-  if [ -f ~/.gorc ]
+  if [ -f ${HOME}/.gorc ]
   then
-    source ~/.gorc
+    source ${HOME}/.gorc
     echo "GO Initialised"
   fi
 

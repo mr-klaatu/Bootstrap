@@ -5,7 +5,7 @@
 osascript -e 'tell application "System Preferences" to quit'
 
 # Initialise
-export THISHOST=`cat ${HOME}/Developer/Bootstrap/computer_name.sh`
+export THISHOST=`cat ${HOME}/Developer/Bootstrap/computer_name.cfg`
 
 # Ask for the administrator password upfront
 sudo -v
@@ -16,9 +16,10 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 ###############################################################################
 # Hostname stuff                                                              #
 ###############################################################################
-sudo scutil --set HostName $THISHOST
-sudo scutil --set LocalHostName $THISHOST
-sudo scutil --set ComputerName $THISHOST
+sudo scutil --set HostName ${THISHOST}.local
+sudo scutil --set LocalHostName ${THISHOST}
+sudo scutil --set ComputerName ${THISHOST}.local
+sudo defaults write /Library/Preferences/SystemConfiguration/com.apple.smb.server NetBIOSName -string "${THISHOST}"
 
 ###############################################################################
 # General UI/UX                                                               #
@@ -42,9 +43,9 @@ defaults write com.apple.print.PrintingPrefs "Quit When Finished" -bool true
 # Disable press-and-hold for keys in favor of key repeat
 defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
 
-# Set a blazingly fast keyboard repeat rate
-defaults write NSGlobalDomain KeyRepeat -int 1
-defaults write NSGlobalDomain InitialKeyRepeat -int 10
+# Set keyboard repeat rate
+defaults write NSGlobalDomain KeyRepeat -float 0.3166667
+defaults write NSGlobalDomain InitialKeyRepeat -float 0.5833333
 
 ###############################################################################
 # Finder                                                                      #
