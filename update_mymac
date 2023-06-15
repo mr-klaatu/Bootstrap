@@ -1,0 +1,12 @@
+#!/opt/homebrew/bin/zsh
+echo "Updating Brew"
+brew update
+echo "Upgrading Brew"
+brew upgrade
+echo "Running Brew Doctor"
+brew doctor
+source ~/.zshrc
+echo "Updating oh-my-zsh"
+omz update
+echo "Updating Gems"
+sudo gem update

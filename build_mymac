@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Script to intall useful OSX Options and Utilities to create PHP Development Environment
+# Script to intall useful OSX Options and Utilities to create MAC Development Environment
 #
 
 #############
@@ -59,8 +59,6 @@ else
 	export HOMEBREW_ROOT=/usr/local
 fi
 
-
-
 # Set the colours you can use
 black='\033[0;30m'
 white='\033[0;37m'
@@ -91,13 +89,13 @@ logger() {
 	return
 }
 
-# First determine the current directory, this script can only be run form ${HOME}/Developer/Dotfiles.
+# First determine the current directory, this script can only be run form ${HOME}/Developer/Bootstrap.
 #
 CURR_PATH=`pwd`
 NEED_PATH=`echo ${HOME}/Developer/Bootstrap`
 
 if [[ $CURR_PATH != $NEED_PATH ]]; then
-	logger "ERROR This script must be run from ${HOME}/Developer/Dotfiles" E
+	logger "ERROR This script must be run from ${HOME}/Developer/Bootstrap" E
 	exit 1
 fi
 
@@ -297,7 +295,6 @@ if [ -d ${HOME}/.oh-my-zsh ]; then
 	/bin/rm -rf ${HOME}/.oh-my-zsh
 fi
 
-
 logger "Now install OhMyZsh" I
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 
@@ -329,7 +326,6 @@ fi
 echo $sudoPW | sudo -S dscl . -create /Users/$USER UserShell ${HOMEBREW_ROOT}/bin/zsh
 #
 logger "Shell set to Homebrew Supplied version of ZSH - ${HOMEBREW_ROOT}/bin/zsh" I
-
 
 
 logger "Do you want to install a PHP environment and Valet? (y/n)" Q
