@@ -11,6 +11,58 @@
 #############
 # Functions
 #############
+# Set the colours you can use
+black='\033[0;30m'
+white='\033[0;37m'
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+blue='\033[0;34m'
+magenta='\033[0;35m'
+cyan='\033[0;36m'
+
+# Resets the style
+reset=`tput sgr0`
+
+logger() {
+	# Color-echo. 
+	# arg $1 = message
+	# arg $2 = Color
+
+	if [ -z "$1" ]; then echo ""; return; fi
+	if [ -z "$2" ]; then colour=${green} prefix="-?-"; fi
+	if [ "$2" = "E" ]; then colour=${red} prefix="-E-"; fi
+	if [ "$2" = "W" ]; then colour=${yellow} prefix="-W-"; fi
+	if [ "$2" = "I" ]; then colour=${green} prefix="-I-"; fi
+	if [ "$2" = "Q" ]; then colour=${cyan} prefix="-I-"; fi
+	if [ "$2" = "N" ]; then colour=${magenta} prefix="-I-"; fi
+
+	echo -e "${colour}${prefix} ${1}${reset}"
+	return
+}
+
+setup_symlinks() {
+	logger "Installing symlinks to DOT files" I
+
+	# This is the root path known as the DEVENV link...
+	ln -sf ${HOME}/Documents/Developer ${HOME}/Developer
+	
+	# link all the DOTFILES to the home directory...
+	for file in "${DOTFILES[@]}"
+	do
+		if [[ -L ${HOME}/.${file%%.*} ]]; then
+			logger "Removing old link ${HOME}/.${file%%.*}" W
+			unlink ${HOME}/.${file%%.*}
+		fi
+		if [[ -L ${HOME}/.${file%%.*} ]]; then
+			logger "Removing old file ${HOME}/.${file%%.*}" W
+			rm -f ${HOME}/.${file%%.*}
+		fi
+		logger "Creating ${HOME}/.${file%%.*} linked to to ${BOOTENV}/${file}" I
+		ln -sf "${BOOTENV}/${file}" "${HOME}/.${file%%.*}" 
+	done
+}
+
 trim() {
     local var="$*"
     # remove leading whitespace characters
@@ -25,22 +77,101 @@ show_host_status() {
 	logger "This machine is $(/usr/bin/uname -n), Running on $Architecture Architecture" I
 	logger "Current default SHELL is $(which zsh) at the version of $(zsh --version)" I
 	logger "The current user is ${USER} and is located in ${PWD}" I
-	if [ -d ${HOMEBREW_ROOT}/bin ]; then
-		# We are running an enhanced Homebrew Environment... 
-		logger "This machine is currently running an enhanced HOMEBREW environment." I
-	else
+	if [[ -z "${HOMEBREW_ROOT}" ]]; then  # Check for the homebrew root env...
 		# We are NOT running an enhanced Homebrew Environment... 
 		logger "This machine is currently running a standard OSX environment." I
-	fi
+	else
+		if [ -d ${HOMEBREW_ROOT}/bin ]; then   # Check for the homebrew bin directory...
+			# We are running an enhanced Homebrew Environment... 
+			logger "This machine is currently running an enhanced HOMEBREW environment." I
+		else
+			# We are NOT running an enhanced Homebrew Environment... 
+			logger "This machine is currently running a standard OSX environment." I
+		fi
+	fi	
 	logger "----------------------------------------------------------------" I
+}
+
+check_devenv_link () {
+	logger "Checking status of the DEVENV link" I
+	LINKSTATUS=0
+	if [ -L ${DEVENV} ] ; then
+	if [ -e ${DEVENV} ] ; then
+		logger "The DEVENV link is set up correctly" I
+		LINKSTATUS=1
+	else
+		logger "The DEVENV link is broken" E
+		fi
+	elif [ -e ${DEVENV} ] ; then
+	logger "The DEVENV link is set up as a physical folder" W
+	else
+	logger "The DEVENV link is missing" E
+	fi
+	if [[ ${LINKSTATUS} == 0 ]]
+	then
+		logger "There was a problem with the DEVENV Link - Re-running setup_symlinks" W
+		setup_symlinks
+	fi
+}
+
+install_commandline_tools() {
+	
+#Install Mac Xcode Command Line tools
+if type xcode-select >&- && xpath=$( xcode-select --print-path ) &&
+	test -d "${xpath}" && test -x "${xpath}" ; then
+	#... is correctly installed
+	#
+	logger "Commandline tools have been installed..." I
+else
+   	#... isn't correctly installed
+	#
+	logger "First install commandline tools" I
+	xcode-select —-install
+fi
+}
+
+install_ohmyzsh_and_plugings() {
+	logger "Delete old OhMyZsh files" I
+	if [ -f ${HOME}/.zshrc ]; then
+		/bin/rm -f ${HOME}/.zshrc
+	fi
+	if [ -d ${HOME}/.oh-my-zsh ]; then
+		/bin/rm -rf ${HOME}/.oh-my-zsh
+	fi
+
+	logger "Now install OhMyZsh" I
+	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+
+	logger "Now install OhMyZsh auto-suggestions plugin" I
+	echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-autosuggestions ${HOME}/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+	if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-autosuggestions ]; then
+	    logger "Failed to install zsh-autosuggestions" E
+	else
+	    logger "Installed zsh-autosuggestions" I
+	fi
+
+	logger "Now install OhMyZsh zsh-syntax-highlighting plugin" I
+	echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+	if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting ]; then
+	    logger "Failed to install zsh-syntax-highlighting" E
+	else
+	    logger "Installed zsh-syntax-highlighting" I
+	fi
+
+	logger "Now install OhMyZsh zsh-completions plugin" I
+	echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:=~/.oh-my-zsh/custom}/plugins/zsh-completions
+	if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-completions ]; then
+	    logger "Failed to install zsh-completions" E
+	else
+	    logger "Installed zsh-completions" I
+	fi
+
+	logger "ohmyzsh has been installed..." I
 }
 
 #############
 # INITIALISE
 #############
-
-# environment for these scripts and utilities
-BOOTENV=${HOME}/Developer/Bootstrap
 
 # date for this backup 
 BCKDATE=`date +%Y%m%d%H%M`
@@ -48,7 +179,7 @@ BCKDATE=`date +%Y%m%d%H%M`
 # list of all dotfiles in use 
 DOTFILES=('brewrc.sh' 'gitconfig.sh' 'gorc.sh' 'osxrc.sh' 'vimrc.sh' 'zshrc.sh' 'aliasrc.sh')
 
-# Add settings for HOMEBREW
+# Add environment settings for HOMEBREW
 if [ `/usr/bin/uname -p | /usr/bin/grep -i arm` ]; then
 	logger "Setting build environment to ARM" I
 	export Architecture=Arm
@@ -59,36 +190,6 @@ else
 	export HOMEBREW_ROOT=/usr/local
 fi
 
-# Set the colours you can use
-black='\033[0;30m'
-white='\033[0;37m'
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[0;33m'
-blue='\033[0;34m'
-magenta='\033[0;35m'
-cyan='\033[0;36m'
-
-# Resets the style
-reset=`tput sgr0`
-
-# Color-echo. 
-# arg $1 = message
-# arg $2 = Color
-logger() {
-
-	if [ -z "$1" ]; then echo ""; return; fi
-	if [ -z "$2" ]; then colour=${green} prefix="-?-"; fi
-	if [ "$2" = "E" ]; then colour=${red} prefix="-E-"; fi
-	if [ "$2" = "W" ]; then colour=${yellow} prefix="-W-"; fi
-	if [ "$2" = "I" ]; then colour=${green} prefix="-I-"; fi
-	if [ "$2" = "Q" ]; then colour=${cyan} prefix="-I-"; fi
-	if [ "$2" = "N" ]; then colour=${magenta} prefix="-I-"; fi
-
-	echo -e "${colour}${prefix} ${1}${reset}"
-	return
-}
-
 # First determine the current directory, this script can only be run form ${HOME}/Developer/Bootstrap.
 #
 CURR_PATH=`pwd`
@@ -98,6 +199,10 @@ if [[ $CURR_PATH != $NEED_PATH ]]; then
 	logger "ERROR This script must be run from ${HOME}/Developer/Bootstrap" E
 	exit 1
 fi
+
+# Check that the sym-link from the cloud based Developer folder is in place
+#
+check_devenv_link
 
 logger
 logger "###############################################" N
@@ -120,19 +225,7 @@ fi
 
 show_host_status
 
-#Install Mac Xcode Command Line tools
-if type xcode-select >&- && xpath=$( xcode-select --print-path ) &&
-	test -d "${xpath}" && test -x "${xpath}" ; then
-	#... is correctly installed
-	#
-	logger "Commandline tools have been installed..." I
-else
-   	#... isn't correctly installed
-	#
-	logger "First install commandline tools" I
-	xcode-select —-install
-fi
-#
+install_commandline_tools
 
 #
 # Promt user and find out if this script needs to delete all the Mac customisation ?
@@ -167,25 +260,39 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 		logger "OhMyZSH is not installed" W
 	fi
 
-	logger "deleting symlinks to runtime files" I
-	for file in "${DOTFILES[@]}"; do
-		if [[ -L ${HOME}/.${file%%.*} ]]; then
-			logger "Removing old link ${HOME}/.${file%%.*}" W
-			unlink ${HOME}/.${file%%.*}
-		fi
-	done
+	logger "deleting non-standard symlinks to runtime files" I
+	if [[ -L ${HOME}/.brewrc ]]; then
+		unlink ${HOME}/.brewrc
+	fi	
+	if [[ -L ${HOME}/.vimrcrc ]]; then
+		unlink ${HOME}/.vimrc
+	fi	
+	#for file in "${DOTFILES[@]}"; do
+	#	if [[ -L ${HOME}/.${file%%.*} ]]; then
+	#		logger "Removing old link ${HOME}/.${file%%.*}" W
+	#		unlink ${HOME}/.${file%%.*}
+	#	fi
+	#done
 
-	if [ "${SHELL}" != "/bin/zsh" ]; then
-		logger "Resetting shell back to Mac Supplied version of ZSH" I
-		echo $sudoPW | sudo -S chsh -s /bin/zsh ${USER}
-		logger "Removing the Brew version of .zshrc" I
-		if [[ -L ${HOME}/.zshrc ]]; then
-			/bin/rm ${HOME}/.zshrc
-		fi
-		logger "Installing a default version of .zshrc" I
-		ln -sf "${BOOTENV}/default_zshrc.sh" "${HOME}/.zshrc" 
-		source ${HOME}/.zshrc
+	logger "Resetting shell back to Mac Supplied version of ZSH" I
+	echo $sudoPW | sudo -S chsh -s /bin/zsh ${USER}
+	
+	#logger "Removing the Brew version of .zshrc" I
+	#if [[ -L ${HOME}/.zshrc ]]; then
+	#	/bin/rm ${HOME}/.zshrc
+	#fi
+
+	setup_symlinks
+
+	#logger "Installing the .zshrc link" I
+	#ln -sf "${BOOTENV}/zshrc.sh" "${HOME}/.zshrc" 
+
+	logger "Removingn non-standard symlinks to runtime files" I
+	if [[ -L ${HOME}/.brewrc ]]; then
+		unlink ${HOME}/.brewrc
 	fi
+
+	source ${HOME}/.zshrc
 
     show_host_status
 
@@ -287,46 +394,12 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 fi
 
 #
-logger "Delete old OhMyZsh files" I
-if [ -f ${HOME}/.zshrc ]; then
-	/bin/rm -f ${HOME}/.zshrc
-fi
-if [ -d ${HOME}/.oh-my-zsh ]; then
-	/bin/rm -rf ${HOME}/.oh-my-zsh
-fi
-
-logger "Now install OhMyZsh" I
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-
-logger "Now install OhMyZsh auto-suggestions plugin" I
-echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-autosuggestions ${HOME}/.oh-my-zsh/custom/plugins/zsh-autosuggestions
-if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-autosuggestions ]; then
-    logger "Failed to install zsh-autosuggestions" E
-else
-    logger "Installed zsh-autosuggestions" I
-fi
-
-logger "Now install OhMyZsh zsh-syntax-highlighting plugin" I
-echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting ]; then
-    logger "Failed to install zsh-syntax-highlighting" E
-else
-    logger "Installed zsh-syntax-highlighting" I
-fi
-
-logger "Now install OhMyZsh zsh-completions plugin" I
-echo $sudoPW | sudo -S git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:=~/.oh-my-zsh/custom}/plugins/zsh-completions
-if [ ! -d ${HOME}/.oh-my-zsh/custom/plugins/zsh-completions ]; then
-    logger "Failed to install zsh-completions" E
-else
-    logger "Installed zsh-completions" I
-fi
+#install_ohmyzsh_and_plugings
 
 #
 echo $sudoPW | sudo -S dscl . -create /Users/$USER UserShell ${HOMEBREW_ROOT}/bin/zsh
 #
 logger "Shell set to Homebrew Supplied version of ZSH - ${HOMEBREW_ROOT}/bin/zsh" I
-
 
 logger "Do you want to install a PHP environment and Valet? (y/n)" Q
 read "reply?Continue? (y/n) "
@@ -353,20 +426,8 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 
 fi
 
-logger "Installing symlinks to runtime files" I
-for file in "${DOTFILES[@]}"
-do
-    if [[ -L ${HOME}/.${file%%.*} ]]; then
-		logger "Removing old link ${HOME}/.${file%%.*}" W
-		unlink ${HOME}/.${file%%.*}
-	fi
-	if [[ -L ${HOME}/.${file%%.*} ]]; then
-		logger "Removing old file ${HOME}/.${file%%.*}" W
-		rm -f ${HOME}/.${file%%.*}
-	fi
-	logger "Creating ${HOME}/.${file%%.*} linked to to ${BOOTENV}/${file}" I
-    ln -sf "${BOOTENV}/${file}" "${HOME}/.${file%%.*}" 
-done
+# Create all the symlinks from the dev directory to the home directory.
+setup_symlinks
 
 logger "Do you want to setup OSX defaults? (y/n)" Q
 read "reply?Continue? (y/n) "

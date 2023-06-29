@@ -8,5 +8,5 @@ brew doctor
 source ~/.zshrc
 echo "Updating oh-my-zsh"
 omz update
-echo "Updating Gems"
-sudo gem update
+#echo "Updating Gems"
+#sudo gem update
