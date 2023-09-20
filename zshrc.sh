@@ -20,11 +20,11 @@ unset BREW
 
 if [ `uname -p | grep -i arm` ] 
 then
-	export Architecture=Arm
+  export Architecture=Arm
   export ARCHFLAGS="-arch arm64"
   export HOMEBREW_ROOT=/opt/homebrew
 else
-	export Architecture=Intel
+  export Architecture=Intel
   export ARCHFLAGS="-arch x86_64"
   export HOMEBREW_ROOT=/usr/local
 fi
@@ -51,6 +51,13 @@ then
   then
     source ${HOME}/.brewrc
     echo "Homebrew Initialised"
+  fi
+
+  # Setup PATH to ccache (if its installed)
+  if [ -d ${HOMEBREW_ROOT}/opt/ccache/libexec ]
+  then
+    export PATH="${HOMEBREW_ROOT}/opt/ccache/libexec:${PATH}"
+    echo "-DEBUG- ${PATH} - zshrc-1"
   fi
 
   # Setup Ruby (if its installed)
@@ -137,6 +144,16 @@ then
 
   # Only use the in an interactive shell running Standard OSX...
   #
+
+  # Preferred editor 
+  if [[ "$BREW" == "YES" ]] 
+  then
+      export EDITOR='vim'
+      export VISUAL='vim'
+  else
+      export EDITOR='vi'
+      export VISUAL='vi'
+  fi
   
   # Setup aliases
   if [ -f ${HOME}/.aliasrc ]
@@ -150,16 +167,6 @@ then
   then
     source ${HOME}/.gorc
     echo "GO Initialised"
-  fi
-
-  # Preferred editor 
-  if [[ "$BREW" == "YES" ]] 
-  then
-      export EDITOR='vim'
-      export VISUAL='vim'
-  else
-      export EDITOR='vi'
-      export VISUAL='vi'
   fi
 
   # Manage command history...

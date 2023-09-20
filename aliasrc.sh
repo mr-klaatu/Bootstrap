@@ -17,7 +17,14 @@ then
   alias godev="cd ${HOME}/Developer"
   alias goboot="cd ${HOME}/Developer/Bootstrap"
   alias gosrc="cd ${HOME}/Developer/GO/src/github.com/mr-klaatu"
+  alias goesp="cd ${HOME}/Developer/ESP/esp-idf"
 
   alias vi="${EDITOR}"
+
+  alias python="python3"
+  alias pip="pip3"
+  alias esptool="esptool.py"
+
+  alias esp-idf="cd $HOME/Developer/ESP/esp-idf;. $HOME/Developer/ESP/esp-idf/export.sh"
  
 fi
