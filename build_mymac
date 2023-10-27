@@ -11,18 +11,6 @@
 #############
 # Functions
 #############
-# Set the colours you can use
-black='\033[0;30m'
-white='\033[0;37m'
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[0;33m'
-blue='\033[0;34m'
-magenta='\033[0;35m'
-cyan='\033[0;36m'
-
-# Resets the style
-reset=`tput sgr0`
 
 logger() {
 	# Color-echo. 
@@ -173,6 +161,17 @@ install_ohmyzsh_and_plugings() {
 # INITIALISE
 #############
 
+# Set the colours you can use
+black='\033[0;30m'
+white='\033[0;37m'
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+blue='\033[0;34m'
+magenta='\033[0;35m'
+cyan='\033[0;36m'
+reset=`tput sgr0`
+
 # date for this backup 
 BCKDATE=`date +%Y%m%d%H%M`
 
@@ -260,11 +259,11 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 		logger "OhMyZSH is not installed" W
 	fi
 
-	logger "deleting non-standard symlinks to runtime files" I
+	logger "Removing non-standard symlinks to runtime files" I
 	if [[ -L ${HOME}/.brewrc ]]; then
 		unlink ${HOME}/.brewrc
 	fi	
-	if [[ -L ${HOME}/.vimrcrc ]]; then
+	if [[ -L ${HOME}/.vimrc ]]; then
 		unlink ${HOME}/.vimrc
 	fi	
 	#for file in "${DOTFILES[@]}"; do
@@ -277,20 +276,15 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	logger "Resetting shell back to Mac Supplied version of ZSH" I
 	echo $sudoPW | sudo -S chsh -s /bin/zsh ${USER}
 	
-	#logger "Removing the Brew version of .zshrc" I
-	#if [[ -L ${HOME}/.zshrc ]]; then
-	#	/bin/rm ${HOME}/.zshrc
-	#fi
+	logger "Removing the Brew version of .zshrc" I
+	if [[ -L ${HOME}/.zshrc ]]; then
+		/bin/mv ${HOME}/.zshrc ${HOME}/.zshrc.orig
+ 	fi
 
 	setup_symlinks
 
-	#logger "Installing the .zshrc link" I
-	#ln -sf "${BOOTENV}/zshrc.sh" "${HOME}/.zshrc" 
-
-	logger "Removingn non-standard symlinks to runtime files" I
-	if [[ -L ${HOME}/.brewrc ]]; then
-		unlink ${HOME}/.brewrc
-	fi
+	logger "Installing the .zshrc link" I
+	ln -sf "${BOOTENV}/zshrc.sh" "${HOME}/.zshrc" 
 
 	source ${HOME}/.zshrc
 
