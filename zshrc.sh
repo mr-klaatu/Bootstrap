@@ -40,7 +40,8 @@ fi
 
 if [[ "$BREW" == "YES" ]]
 then
-  echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEBREW_ROOT of ${HOMEBREW_ROOT}..."
+echo "================================================================"
+echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEBREW_ROOT of ${HOMEBREW_ROOT}..."
   #
   # All the code below runs using the capbilites of HOMEBREW addons.
   #
@@ -51,13 +52,14 @@ then
   then
     source ${HOME}/.brewrc
     echo "Homebrew Initialised"
+    echo "================================================================"
   fi
 
   # Setup PATH to ccache (if its installed)
   if [ -d ${HOMEBREW_ROOT}/opt/ccache/libexec ]
   then
     export PATH="${HOMEBREW_ROOT}/opt/ccache/libexec:${PATH}"
-    echo "-DEBUG- ${PATH} - zshrc-1"
+    ##echo "-DEBUG- ${PATH} - zshrc-1"
   fi
 
   # Setup Ruby (if its installed)
@@ -101,6 +103,7 @@ then
 
 
 else
+  echo "================================================================"
   echo "Running a Standard OSX environemnt on ($Architecture) Architecture..."
   #
   # Stuff in here gets set only for standard installs.
@@ -142,7 +145,7 @@ export GEM_HOME="$HOME/.gem"
 if [[ -o interactive ]]
 then
 
-  # Only use the in an interactive shell running Standard OSX...
+  # Only use these in an interactive shell running Standard OSX...
   #
 
   # Preferred editor 
@@ -184,6 +187,7 @@ then
   setopt hist_ignore_dups
   setopt hist_find_no_dups
 
+  echo "================================================================"
   # Case insensitivity...
   #
   echo "Setup Case Insensitivity."
@@ -199,17 +203,19 @@ then
   #
   echo "Setup Prompt."
   PROMPT="%F{33}%# %n@%m:%1~/ $ "
-
+  echo "================================================================"
   echo "This machine is `/usr/bin/uname -n`, Running on $Architecture Architecture"
   echo "Current default SHELL is $(which zsh) at the version of $(zsh --version)"
   echo "The current user is ${USER} in ${PWD}"
   echo "... zshrc complete."
+  echo "================================================================"
 
    # Only use this in an interactive shell running BREW...
   #
   if [[ -n $BREW ]]
   then  
     brew services list
+    echo "================================================================"
     printf "\e[92m" && figlet -f standard "Welcome Master"
     neofetch
   fi
