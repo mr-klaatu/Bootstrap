@@ -429,7 +429,7 @@ logger "Do you want to install a PHP environment? (y/n)" Q
 read "reply?Continue? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
 
-	brew install php composer apache
+	brew install php composer apache-httpd
 
 	#Setup Sites
 	if [ ! -d ${HOME}/Sites ]; then
