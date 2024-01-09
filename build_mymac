@@ -345,14 +345,16 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 
 	logger "Complete" I
 	
+
+	logger
+	logger "###############################################" N
+	logger "#        You have restored the system to      #" N
+	logger "#              standard Apple OSX             #" N
+	logger "###############################################" N
+	logger
+
 fi
 
-logger
-logger "###############################################" N
-logger "#        You have restored the system to      #" N
-logger "#              standard Apple OSX             #" N
-logger "###############################################" N
-logger
 
 logger "You can Exit now or Continue to install HomeBrew etc" Q
 read "reply?Continue? (y/n) "
@@ -363,36 +365,38 @@ if [[ "$reply" =~ ^[nN]$ ]]; then
   exit
 fi
 
-logger "We are about to install HomeBrew." I
+if [[ -z "${HOMEBREW_ROOT}" ]]; then
+	logger "We are about to install HomeBrew." I
 
-#Install Homebrew
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+	#Install Homebrew
+	/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-#Validate HomeBrew Environment
-if [ "${Architecture}" = "Arm" ]; then
-	echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
-	eval "$(/opt/homebrew/bin/brew shellenv)"  
-else
-	echo 'eval "$(/usr/local/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
-	eval "$(/usr/local/bin/brew shellenv)" n
-fi
-export CPATH=${HOMEBREW_ROOT}/include
-export LIBRARY_PATH=${HOMEBREW_ROOT}/lib
-#export PATH=${HOMEBREW_ROOT}/bin:${HOMEBREW_ROOT}/sbin:${PATH}
+	#Validate HomeBrew Environment
+	if [ "${Architecture}" = "Arm" ]; then
+		echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
+		eval "$(/opt/homebrew/bin/brew shellenv)"  
+	else
+		echo 'eval "$(/usr/local/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
+		eval "$(/usr/local/bin/brew shellenv)" n
+	fi
+	export CPATH=${HOMEBREW_ROOT}/include
+	export LIBRARY_PATH=${HOMEBREW_ROOT}/lib
+	#export PATH=${HOMEBREW_ROOT}/bin:${HOMEBREW_ROOT}/sbin:${PATH}
 
-logger "Sourcing the new brewrc.sh file, to make brew work correctly." I
-source ${BOOTENV}/brewrc.sh
+	logger "Sourcing the new brewrc.sh file, to make brew work correctly." I
+	source ${BOOTENV}/brewrc.sh
 
-logger "Installing Standard Homebrew Modules" I
-install_via_brew brew-std.cfg
+	logger "Installing Standard Homebrew Modules" I
+	install_via_brew brew-std.cfg
 
-CASK_INSTALLED="false"
-logger "Do you want to install Homebrew CASK facility?" Q
-read "reply?Install? (y/n) "
-if [[ "$reply" =~ ^[yY]$ ]]; then
-    logger "Installing 'cask' and its dependancies." I
-	brew install cask
-	CASK_INSTALLED="true"
+	CASK_INSTALLED="false"
+	logger "Do you want to install Homebrew CASK facility?" Q
+	read "reply?Install? (y/n) "
+	if [[ "$reply" =~ ^[yY]$ ]]; then
+		logger "Installing 'cask' and its dependancies." I
+		brew install cask
+		CASK_INSTALLED="true"
+	fi
 fi
 
 logger "Do you want to build a Groovy Dev Environment? (y/n)" Q
@@ -421,16 +425,11 @@ echo $sudoPW | sudo -S dscl . -create /Users/$USER UserShell ${HOMEBREW_ROOT}/bi
 #
 logger "Shell set to Homebrew Supplied version of ZSH - ${HOMEBREW_ROOT}/bin/zsh" I
 
-logger "Do you want to install a PHP environment and Valet? (y/n)" Q
+logger "Do you want to install a PHP environment? (y/n)" Q
 read "reply?Continue? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
-	#install valet
 
-	brew install php composer 
-
-	composer global require laravel/valet
-
-	valet install
+	brew install php composer apache
 
 	#Setup Sites
 	if [ ! -d ${HOME}/Sites ]; then
@@ -441,8 +440,6 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	fi
 
 	cd ${HOME}/Sites
-	valet park
-	valet secure laravel
 
 fi
 
