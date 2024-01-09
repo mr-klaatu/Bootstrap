@@ -102,6 +102,54 @@ check_devenv_link () {
 	fi
 }
 
+install_via_brew()
+{
+if [ $# -lt 1 ]
+  then
+    echo "Usage: $install_via_brew[1] <brew-fileame.cfg>"
+    return
+  fi	
+brewFile=${1}	
+logger "Running 'brew install' with $brewFile to install other software." I
+
+# The following loop used channel 9 to read the file and directs input for the brew command to read from /dev/null
+# this is needed because brew install, tends to mess with stdio and causes the loop to terminate early.
+
+while IFS= read -u 9 application || [ -n "$application" ]; do
+	case $application in
+		"#"*) 
+		   # hash found on line - no action
+		;;
+		"&"*) 
+		   # ampersand found on line - install as a cask item
+		   cask_application=`echo ${application} | sed -r 's/^&//'`
+           logger "Installing CASK ${cask_application}" I
+		   # use xargs to trim the application name and install it...
+		   brew install --cask `trim "${cask_application}"` </dev/null
+		;;
+		*) 
+		   if [[ "${application}" = "cask" ]]; then	
+		   	    # cask needs to be installed separately.
+				logger "Remove 'cask' from the brew.cfg file as this causes problems." E
+				if [[ "${CASK_INSTALLED}" = "false" ]];	then
+					logger "You will need to install 'cask' manually, when this script completes." W
+					logger "Use the command '$ brew install cask'." W
+		   		fi
+				continue
+		   fi
+		   logger "Installing ${application}" I
+		   # use xargs to trim the application name and install it...
+		   brew install `trim "${application}"` </dev/null
+        ;;
+	esac
+done 9< ${brewFile}
+
+logger "Quick tidy up of the brew environment." I
+brew cleanup
+brew doctor
+}
+
+
 install_commandline_tools() {
 	
 #Install Mac Xcode Command Line tools
@@ -176,7 +224,12 @@ reset=`tput sgr0`
 BCKDATE=`date +%Y%m%d%H%M`
 
 # list of all dotfiles in use 
-DOTFILES=('brewrc.sh' 'gitconfig.sh' 'gorc.sh' 'osxrc.sh' 'vimrc.sh' 'zshrc.sh' 'aliasrc.sh')
+DOTFILES=('brewrc.sh' 'gitconfig.sh' 'gorc.sh' 'osxrc.sh' 'vimrc.sh' 'zshrc.sh' 'aliasrc.sh' 'homeyrc.sh' 'groovyrc.sh')
+
+GOLANGDEV='N'
+HOMEYDEV='N'
+PHPDEV='N'
+GROOVYDEV='N'
 
 # Add environment settings for HOMEBREW
 if [ `/usr/bin/uname -p | /usr/bin/grep -i arm` ]; then
@@ -330,6 +383,9 @@ export LIBRARY_PATH=${HOMEBREW_ROOT}/lib
 logger "Sourcing the new brewrc.sh file, to make brew work correctly." I
 source ${BOOTENV}/brewrc.sh
 
+logger "Installing Standard Homebrew Modules" I
+install_via_brew brew-std.cfg
+
 CASK_INSTALLED="false"
 logger "Do you want to install Homebrew CASK facility?" Q
 read "reply?Install? (y/n) "
@@ -339,56 +395,26 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	CASK_INSTALLED="true"
 fi
 
-logger "Running 'brew install' to install our other software." I
-brewFile=${BOOTENV}/brew.cfg
-
-# The following loop used channel 9 to read the file and directs input for the brew command to read from /dev/null
-# this is needed because brew install, tends to mess with stdio and causes the loop to terminate early.
-
-while IFS= read -u 9 application || [ -n "$application" ]; do
-	case $application in
-		"#"*) 
-		   # hash found on line - no action
-		;;
-		"&"*) 
-		   # ampersand found on line - install as a cask item
-		   cask_application=`echo ${application} | sed -r 's/^&//'`
-           logger "Installing CASK ${cask_application}" I
-		   # use xargs to trim the application name and install it...
-		   brew install --cask `trim "${cask_application}"` </dev/null
-		;;
-		*) 
-		   if [[ "${application}" = "cask" ]]; then	
-		   	    # cask needs to be installed separately.
-				logger "Remove 'cask' from the brew.cfg file as this causes problems." E
-				if [[ "${CASK_INSTALLED}" = "false" ]];	then
-					logger "You will need to install 'cask' manually, when this script completes." W
-					logger "Use the command '$ brew install cask'." W
-		   		fi
-				continue
-		   fi
-		   logger "Installing ${application}" I
-		   # use xargs to trim the application name and install it...
-		   brew install `trim "${application}"` </dev/null
-        ;;
-	esac
-done 9< ${brewFile}
-
-logger "Quick tidy up of the brew environment." I
-brew cleanup
-brew doctor
-
-logger "You can configure git or leave the existing config alone..." Q
-read "reply?Configure? (y/n) "
+logger "Do you want to build a Groovy Dev Environment? (y/n)" Q
+read "reply?Install? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
-	git config --global color.ui true
-	git config --global user.name "David Cheetham"
-	git config --global user.email "mr_klaatu.com"
-	ssh-keygen -t rsa -C "mr_klaatu.com"
+  install_via_brew brew-groovy.cfg
+  GROOVYDEV='Y'
 fi
 
-#
-#install_ohmyzsh_and_plugings
+logger "Do you want to build a HOMEY Dev Environment? (y/n)" Q
+read "reply?Install? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+  install_via_brew brew-homey.cfg
+  HOMEYDEV='Y'
+fi
+
+logger "Do you want to build a GOLANG Dev Environment? (y/n)" Q
+read "reply?Install? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+  install_via_brew brew-go.cfg
+  GOLANGDEV='Y'
+fi
 
 #
 echo $sudoPW | sudo -S dscl . -create /Users/$USER UserShell ${HOMEBREW_ROOT}/bin/zsh
@@ -418,6 +444,15 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	valet park
 	valet secure laravel
 
+fi
+
+logger "You can configure git or leave the existing config alone..." Q
+read "reply?Configure? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	git config --global color.ui true
+	git config --global user.name "David Cheetham"
+	git config --global user.email "mr_klaatu.com"
+	ssh-keygen -t rsa -C "mr_klaatu.com"
 fi
 
 # Create all the symlinks from the dev directory to the home directory.

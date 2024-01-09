@@ -94,6 +94,21 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
     fi
   fi    
 
+  # Setup Groovy (if its installed)
+  if [ -f ${HOMEBREW_ROOT}/bin/groovy ]
+  then  
+    export PATH="${HOMEBREW_ROOT}/bin/groovy:${PATH}"
+    echo "Groovy Initialised"
+  fi
+
+  # Setup GOLANG (if its installed)
+  if [ -f ${HOMEBREW_ROOT}/opt/go/libexec ]
+  then  
+    export GOROOT=${HOMEBREW_ROOT}/opt/go/libexec
+    export PATH=${PATH}:${GOPATH}/bin:${GOROOT}/bin
+    echo "GOLANG Initialised"
+  fi
+
   # Setup Composer (if its installed)
   if [ -f ${HOME}/.composer/vendor/bin ]
   then  
@@ -163,13 +178,6 @@ then
   then
     source ${HOME}/.aliasrc
     echo "Aliases Initialised"
-  fi
-
-  # Setup golang
-  if [ -f ${HOME}/.gorc ]
-  then
-    source ${HOME}/.gorc
-    echo "GO Initialised"
   fi
 
   # Manage command history...

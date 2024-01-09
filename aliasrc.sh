@@ -18,6 +18,8 @@ then
   alias goboot="cd ${HOME}/Developer/Bootstrap"
   alias gosrc="cd ${HOME}/Developer/GO/src/github.com/mr-klaatu"
   alias goesp="cd ${HOME}/Developer/ESP/esp-idf"
+  alias gohomey="cd ${HOME}/Developer/homey"
+  alias gogroovy="cd ${HOME}/Developer/groovy"
 
   alias vi="${EDITOR}"
 
