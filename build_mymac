@@ -29,7 +29,7 @@ logger() {
 	return
 }
 
-setup_symlinks() {
+setup_std_symlinks() {
 	logger "Installing symlinks to DOT files" I
 
 	# This is the root path known as the DEVENV link...
@@ -37,6 +37,28 @@ setup_symlinks() {
 	
 	# link all the DOTFILES to the home directory...
 	for file in "${DOTFILES[@]}"
+	do
+		if [[ -L ${HOME}/.${file%%.*} ]]; then
+			logger "Removing old link ${HOME}/.${file%%.*}" W
+			unlink ${HOME}/.${file%%.*}
+		fi
+		if [[ -L ${HOME}/.${file%%.*} ]]; then
+			logger "Removing old file ${HOME}/.${file%%.*}" W
+			rm -f ${HOME}/.${file%%.*}
+		fi
+		logger "Creating ${HOME}/.${file%%.*} linked to to ${BOOTENV}/${file}" I
+		ln -sf "${BOOTENV}/${file}" "${HOME}/.${file%%.*}" 
+	done
+}
+
+setup_env_symlinks() {
+	logger "Installing development symlinks to DOT files" I
+
+	# This is the root path known as the DEVENV link...
+	ln -sf ${HOME}/Documents/Developer ${HOME}/Developer
+	
+	# link all the ENVDOTFILES to the home directory...
+	for file in "${ENVDOTFILES[@]}"
 	do
 		if [[ -L ${HOME}/.${file%%.*} ]]; then
 			logger "Removing old link ${HOME}/.${file%%.*}" W
@@ -68,6 +90,11 @@ show_host_status() {
 	if [[ -z "${HOMEBREW_ROOT}" ]]; then  # Check for the homebrew root env...
 		# We are NOT running an enhanced Homebrew Environment... 
 		logger "This machine is currently running a standard OSX environment." I
+		# see what this is built to do
+		if [[ -z "${GOBUILD}" ]]; then  # Check for the homebrew root env...
+			# We are NOT running an enhanced Homebrew Environment... 
+			logger "This machine is currently running a standard OSX environment." I
+		fi
 	else
 		if [ -d ${HOMEBREW_ROOT}/bin ]; then   # Check for the homebrew bin directory...
 			# We are running an enhanced Homebrew Environment... 
@@ -98,7 +125,7 @@ check_devenv_link () {
 	if [[ ${LINKSTATUS} == 0 ]]
 	then
 		logger "There was a problem with the DEVENV Link - Re-running setup_symlinks" W
-		setup_symlinks
+		setup_std_symlinks
 	fi
 }
 
@@ -224,7 +251,10 @@ reset=`tput sgr0`
 BCKDATE=`date +%Y%m%d%H%M`
 
 # list of all dotfiles in use 
-DOTFILES=('brewrc.sh' 'gitconfig.sh' 'gorc.sh' 'osxrc.sh' 'vimrc.sh' 'zshrc.sh' 'aliasrc.sh' 'homeyrc.sh' 'groovyrc.sh')
+# standard files used in all configurations
+DOTFILES=('gitconfig.sh' 'osxrc.sh' 'vimrc.sh' 'zshrc.sh' 'aliasrc.sh')
+# specific files files used in some configurations
+ENVDOTFILES=('homeyrc.sh' 'groovyrc.sh', 'phprc.sh' 'brewrc.sh' 'gorc.sh')
 
 GOLANGDEV='N'
 HOMEYDEV='N'
@@ -312,20 +342,22 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 		logger "OhMyZSH is not installed" W
 	fi
 
-	logger "Removing non-standard symlinks to runtime files" I
-	if [[ -L ${HOME}/.brewrc ]]; then
-		unlink ${HOME}/.brewrc
-	fi	
-	if [[ -L ${HOME}/.vimrc ]]; then
-		unlink ${HOME}/.vimrc
-	fi	
-	#for file in "${DOTFILES[@]}"; do
-	#	if [[ -L ${HOME}/.${file%%.*} ]]; then
-	#		logger "Removing old link ${HOME}/.${file%%.*}" W
-	#		unlink ${HOME}/.${file%%.*}
-	#	fi
-	#done
+	logger "Removing standard symlinks to runtime files" I
+	for file in "${DOTFILES[@]}"; do
+		if [[ -L ${HOME}/.${file%%.*} ]]; then
+			logger "Removing old link ${HOME}/.${file%%.*}" W
+			unlink ${HOME}/.${file%%.*}
+		fi
+	done
 
+	logger "Removing application specific symlinks to runtime files" I
+	for file in "${ENVDOTFILES[@]}"; do
+		if [[ -L ${HOME}/.${file%%.*} ]]; then
+			logger "Removing old link ${HOME}/.${file%%.*}" W
+			unlink ${HOME}/.${file%%.*}
+		fi
+	done
+	
 	logger "Resetting shell back to Mac Supplied version of ZSH" I
 	echo $sudoPW | sudo -S chsh -s /bin/zsh ${USER}
 	
@@ -334,7 +366,7 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 		/bin/mv ${HOME}/.zshrc ${HOME}/.zshrc.orig
  	fi
 
-	setup_symlinks
+	setup_std_symlinks
 
 	logger "Installing the .zshrc link" I
 	ln -sf "${BOOTENV}/zshrc.sh" "${HOME}/.zshrc" 
@@ -365,7 +397,9 @@ if [[ "$reply" =~ ^[nN]$ ]]; then
   exit
 fi
 
-if [[ -z "${HOMEBREW_ROOT}" ]]; then
+logger "Continuing with computer build process." I
+
+if [ ! -d ${HOMEBREW_ROOT} ]; then
 	logger "We are about to install HomeBrew." I
 
 	#Install Homebrew
@@ -429,7 +463,7 @@ logger "Do you want to install a PHP environment? (y/n)" Q
 read "reply?Continue? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
 
-	brew install php composer apache-httpd
+	install_via_brew brew-php.cfg
 
 	#Setup Sites
 	if [ ! -d ${HOME}/Sites ]; then
@@ -438,8 +472,8 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	else
 		logger "${HOME}/Sites directory already exists" I
 	fi
-
-	cd ${HOME}/Sites
+	
+   PHPDEV='Y'
 
 fi
 
@@ -453,7 +487,7 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 fi
 
 # Create all the symlinks from the dev directory to the home directory.
-setup_symlinks
+setup_env_symlinks
 
 logger "Do you want to setup OSX defaults? (y/n)" Q
 read "reply?Continue? (y/n) "

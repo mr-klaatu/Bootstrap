@@ -52,7 +52,6 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
   then
     source ${HOME}/.brewrc
     echo "Homebrew Initialised"
-    echo "================================================================"
   fi
 
   # Setup PATH to ccache (if its installed)
@@ -68,8 +67,8 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
     if [ -f ${HOME}/.rubyrc ]
     then
       rbenv init - > ~/.rubyrc
-      echo "Ruby Initialised"
       source ${HOME}/.rubyrc
+      echo "Ruby Initialised"
     fi
   fi
 
@@ -89,33 +88,38 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
     if [ -f ${HOME}/.jenvrc ]
     then  
       jenv init - > ~/.jenvrc
-      echo "JENV Initialised"
       source ${HOME}/.jenvrc
+      echo "JENV Initialised"
     fi
   fi    
 
   # Setup Groovy (if its installed)
   if [ -f ${HOMEBREW_ROOT}/bin/groovy ]
   then  
-    export PATH="${HOMEBREW_ROOT}/bin/groovy:${PATH}"
+   
     echo "Groovy Initialised"
+
+    if [ -f ${HOME}/.groovyrc ]
+    then  
+      source ${HOME}/.groovyrc
+      echo "GROOVY Initialised"
+    fi
+
   fi
 
   # Setup GOLANG (if its installed)
   if [ -f ${HOMEBREW_ROOT}/opt/go/libexec ]
   then  
-    export GOROOT=${HOMEBREW_ROOT}/opt/go/libexec
-    export PATH=${PATH}:${GOPATH}/bin:${GOROOT}/bin
+    source ${HOME}/.gorc
     echo "GOLANG Initialised"
   fi
 
-  # Setup Composer (if its installed)
-  if [ -f ${HOME}/.composer/vendor/bin ]
+  # Setup PHP (if its installed)
+  if [ -f ${HOMEBREW_ROOT}bin/php ]
   then  
-    export PATH="${HOME}/.composer/vendor/bin:${PATH}"
-    echo "Composer Initialised"
+    source ${HOME}/.phprc
+    echo "PHP Initialised"
   fi
-
 
 else
   echo "================================================================"
@@ -179,6 +183,7 @@ then
     source ${HOME}/.aliasrc
     echo "Aliases Initialised"
   fi
+  echo "================================================================"
 
   # Manage command history...
   #
@@ -194,8 +199,7 @@ then
   setopt hist_save_no_dups
   setopt hist_ignore_dups
   setopt hist_find_no_dups
-
-  echo "================================================================"
+  
   # Case insensitivity...
   #
   echo "Setup Case Insensitivity."
