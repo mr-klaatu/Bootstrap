@@ -29,11 +29,21 @@ logger() {
 	return
 }
 
-setup_std_symlinks() {
-	logger "Installing symlinks to DOT files" I
+initialise() {
+	logger "Installing the BootStrap Environment" I
 
 	# This is the root path known as the DEVENV link...
+	if [[ -L ${HOME}/Developer ]]; then
+		unlink ${HOME}/Developer              
+	fi
+	if [[ -d ${HOME}/Developer ]]; then
+		mv -f ${HOME}/Developer ${HOME}/Developer-Original             
+	fi
 	ln -sf ${HOME}/Documents/Developer ${HOME}/Developer
+}
+
+setup_std_symlinks() {
+	logger "Installing symlinks to DOT files" I
 	
 	# link all the DOTFILES to the home directory...
 	for file in "${DOTFILES[@]}"
@@ -271,6 +281,11 @@ else
 	export Architecture=Intel
 	export HOMEBREW_ROOT=/usr/local
 fi
+
+
+# Check that the system is ready to build
+#
+initialise
 
 # First determine the current directory, this script can only be run form ${HOME}/Developer/Bootstrap.
 #
