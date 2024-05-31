@@ -136,6 +136,13 @@ fi
 # Stuff in here gets set for ALL installs.
 #
 #
+
+# Setup the link to the Developer folder.
+if [ ! -L ${HOME}/Developer ]
+then
+  ln -s ${HOME}/Documents/Developer ${HOME}/Developer
+fi
+
 # Location of developer scripts and utilities
 export DEVENV=${HOME}/Developer
 
