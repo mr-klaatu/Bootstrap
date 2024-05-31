@@ -45,11 +45,13 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
   #
   # All the code below runs using the capbilites of HOMEBREW addons.
   #
-  
+
   # Brew configuration
   #
   if [ -f ${HOME}/.brewrc ]
   then
+
+    echo "export HOMEBREW_NO_INSTALL_CLEANUP=1" >> ${HOME}/.brewrc
     source ${HOME}/.brewrc
     echo "Homebrew Initialised"
   fi
@@ -229,7 +231,7 @@ then
     brew services list
     echo "================================================================"
     printf "\e[92m" && figlet -f standard "Welcome Master"
-    neofetch
+    fastfetch
   fi
 fi
 

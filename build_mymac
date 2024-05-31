@@ -342,10 +342,18 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	else
 		logger "Brew being uninstalled" I
 		echo $sudoPW | sudo -S /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall.sh)"
-		if [ -d ${HOMEBREW_ROOT} ]; then
-			logger "Deleting any remaining Homebrew directories" I
-			echo $sudoPW | sudo -S /bin/rm -rf ${HOMEBREW_ROOT}
-		fi
+	fi
+
+	logger "Deleting any remaining Homebrew directories or local customisations" I
+	if [ -d ${/opt/homebrew} ]; then
+		echo $sudoPW | sudo -S /bin/rm -rf ${/opt/homebrew}
+	else
+		logger "${/opt/homebrew} does not exist" I	
+	fi
+	if [ -d ${/usr/local/} ]; then
+		echo $sudoPW | sudo -S /bin/rm -rf ${/usr/local/}
+	else
+		logger "${/usr/local/} does not exist" I	
 	fi
 
 	logger "Deleting OhMyZSH Installation" I
@@ -391,7 +399,6 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
     show_host_status
 
 	logger "Complete" I
-	
 
 	logger
 	logger "###############################################" N
@@ -404,6 +411,7 @@ fi
 
 
 logger "You can Exit now or Continue to install HomeBrew etc" Q
+
 read "reply?Continue? (y/n) "
 if [[ "$reply" =~ ^[nN]$ ]]; then
   # Check if we're continuing and output a message if not
@@ -438,6 +446,9 @@ if [ ! -d ${HOMEBREW_ROOT} ]; then
 	logger "Installing Standard Homebrew Modules" I
 	install_via_brew brew-std.cfg
 
+	echo $sudoPW | sudo -S dscl . -create /Users/$USER UserShell ${HOMEBREW_ROOT}/bin/zsh
+	logger "Shell has been set to Homebrew Supplied version of ZSH - ${HOMEBREW_ROOT}/bin/zsh" I
+
 	CASK_INSTALLED="false"
 	logger "Do you want to install Homebrew CASK facility?" Q
 	read "reply?Install? (y/n) "
@@ -448,11 +459,25 @@ if [ ! -d ${HOMEBREW_ROOT} ]; then
 	fi
 fi
 
-logger "Do you want to build a Groovy Dev Environment? (y/n)" Q
-read "reply?Install? (y/n) "
-if [[ "$reply" =~ ^[yY]$ ]]; then
-  install_via_brew brew-groovy.cfg
-  GROOVYDEV='Y'
+logger "Basic Build is now Complete" I
+
+logger
+logger "###############################################" N
+logger "#     From now on you can tailor the system   #" N
+logger "#              to suit your needs             #" N
+logger "###############################################" N
+logger
+
+
+
+
+if [ ! -d ${HOMEBREW_ROOT} ]; then
+	logger "Do you want to build a Groovy Dev Environment? (y/n)" Q
+	read "reply?Install? (y/n) "
+	if [[ "$reply" =~ ^[yY]$ ]]; then
+  	install_via_brew brew-groovy.cfg
+  	GROOVYDEV='Y'
+	fi
 fi
 
 logger "Do you want to build a HOMEY Dev Environment? (y/n)" Q
@@ -469,10 +494,6 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
   GOLANGDEV='Y'
 fi
 
-#
-echo $sudoPW | sudo -S dscl . -create /Users/$USER UserShell ${HOMEBREW_ROOT}/bin/zsh
-#
-logger "Shell set to Homebrew Supplied version of ZSH - ${HOMEBREW_ROOT}/bin/zsh" I
 
 logger "Do you want to install a PHP environment? (y/n)" Q
 read "reply?Continue? (y/n) "
@@ -513,14 +534,15 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	logger 
 fi
 
-source ${HOME}/.zshrc
+source ${HOME}/.zshrc > /dev/null
 
 show_host_status
 
 logger
 logger "###############################################" N
-logger "#    You have built a homebrew the system on  #" N
-logger "#         your standard Apple OSX             #" N
+logger "#    You have built a homebrew system on      #" N
+logger "#              your Apple OSX                 #" N
 logger "###############################################" N
 logger
+
 exit 0
