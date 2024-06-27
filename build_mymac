@@ -27,7 +27,7 @@ logger() {
 
 	echo -e "${colour}${prefix} ${1}${reset}"
 	return
-}
+} # logger()
 
 initialise() {
 	logger "Installing the BootStrap Environment" I
@@ -40,7 +40,7 @@ initialise() {
 		mv -f ${HOME}/Developer ${HOME}/Developer-Original             
 	fi
 	ln -sf ${HOME}/Documents/Developer ${HOME}/Developer
-}
+} # initialise()
 
 setup_std_symlinks() {
 	logger "Installing symlinks to DOT files" I
@@ -52,36 +52,33 @@ setup_std_symlinks() {
 			logger "Removing old link ${HOME}/.${file%%.*}" W
 			unlink ${HOME}/.${file%%.*}
 		fi
-		if [[ -L ${HOME}/.${file%%.*} ]]; then
+		if [[ -f ${HOME}/.${file%%.*} ]]; then
 			logger "Removing old file ${HOME}/.${file%%.*}" W
 			rm -f ${HOME}/.${file%%.*}
 		fi
 		logger "Creating ${HOME}/.${file%%.*} linked to to ${BOOTENV}/${file}" I
 		ln -sf "${BOOTENV}/${file}" "${HOME}/.${file%%.*}" 
 	done
-}
+} # setup_std_symlinks()
 
-setup_env_symlinks() {
-	logger "Installing development symlinks to DOT files" I
+setup_dev_symlinks() {
 
-	# This is the root path known as the DEVENV link...
-	ln -sf ${HOME}/Documents/Developer ${HOME}/Developer
+	# link the passed in file to the $HOME directory...
+
+	file="$1"
+	logger "Installing development symlinks to DOT files for ${file}" I
 	
-	# link all the ENVDOTFILES to the home directory...
-	for file in "${ENVDOTFILES[@]}"
-	do
 		if [[ -L ${HOME}/.${file%%.*} ]]; then
 			logger "Removing old link ${HOME}/.${file%%.*}" W
 			unlink ${HOME}/.${file%%.*}
 		fi
-		if [[ -L ${HOME}/.${file%%.*} ]]; then
+		if [[ -f ${HOME}/.${file%%.*} ]]; then
 			logger "Removing old file ${HOME}/.${file%%.*}" W
 			rm -f ${HOME}/.${file%%.*}
 		fi
 		logger "Creating ${HOME}/.${file%%.*} linked to to ${BOOTENV}/${file}" I
 		ln -sf "${BOOTENV}/${file}" "${HOME}/.${file%%.*}" 
-	done
-}
+} # setup_dev_symlinks()
 
 trim() {
     local var="$*"
@@ -90,7 +87,7 @@ trim() {
     # remove trailing whitespace characters
     var="${var%"${var##*[![:space:]]}"}"
     printf '%s' "$var"
-}
+} # trim()
 
 show_host_status() {
 	logger "----------------------------------------------------------------" I
@@ -115,29 +112,31 @@ show_host_status() {
 		fi
 	fi	
 	logger "----------------------------------------------------------------" I
-}
+} # show_host_status()
 
 check_devenv_link () {
 	logger "Checking status of the DEVENV link" I
 	LINKSTATUS=0
+
 	if [ -L ${DEVENV} ] ; then
-	if [ -e ${DEVENV} ] ; then
 		logger "The DEVENV link is set up correctly" I
 		LINKSTATUS=1
 	else
 		logger "The DEVENV link is broken" E
-		fi
-	elif [ -e ${DEVENV} ] ; then
-	logger "The DEVENV link is set up as a physical folder" W
-	else
-	logger "The DEVENV link is missing" E
 	fi
+		
+	if [ -d ${DEVENV} ] ; then
+		logger "The DEVENV link is set up as a physical folder" WE
+	else
+		logger "The DEVENV link is missing" E
+	fi
+	
 	if [[ ${LINKSTATUS} == 0 ]]
 	then
 		logger "There was a problem with the DEVENV Link - Re-running setup_symlinks" W
 		setup_std_symlinks
 	fi
-}
+} # check_devenv_link ()
 
 install_via_brew()
 {
@@ -145,7 +144,7 @@ if [ $# -lt 1 ]
   then
     echo "Usage: $install_via_brew[1] <brew-fileame.cfg>"
     return
-  fi	
+fi	
 brewFile=${1}	
 logger "Running 'brew install' with $brewFile to install other software." I
 
@@ -183,12 +182,10 @@ done 9< ${brewFile}
 
 logger "Quick tidy up of the brew environment." I
 brew cleanup
-brew doctor
-}
+} # install_via_brew()
 
 
 install_commandline_tools() {
-	
 #Install Mac Xcode Command Line tools
 if type xcode-select >&- && xpath=$( xcode-select --print-path ) &&
 	test -d "${xpath}" && test -x "${xpath}" ; then
@@ -201,7 +198,7 @@ else
 	logger "First install commandline tools" I
 	xcode-select —-install
 fi
-}
+} # install_commandline_tools()
 
 install_ohmyzsh_and_plugings() {
 	logger "Delete old OhMyZsh files" I
@@ -240,7 +237,7 @@ install_ohmyzsh_and_plugings() {
 	fi
 
 	logger "ohmyzsh has been installed..." I
-}
+} # install_ohmyzsh_and_plugings()
 
 #############
 # INITIALISE
@@ -264,12 +261,13 @@ BCKDATE=`date +%Y%m%d%H%M`
 # standard files used in all configurations
 DOTFILES=('gitconfig.sh' 'osxrc.sh' 'vimrc.sh' 'zshrc.sh' 'aliasrc.sh')
 # specific files files used in some configurations
-ENVDOTFILES=('homeyrc.sh' 'groovyrc.sh', 'phprc.sh' 'brewrc.sh' 'gorc.sh')
+ENVDOTFILES=('homeyrc.sh' 'groovyrc.sh' 'phprc.sh' 'gorc.sh' 'pythonrc.sh')
 
 GOLANGDEV='N'
 HOMEYDEV='N'
 PHPDEV='N'
 GROOVYDEV='N'
+PYTHONDEV='N'
 
 # Add environment settings for HOMEBREW
 if [ `/usr/bin/uname -p | /usr/bin/grep -i arm` ]; then
@@ -281,7 +279,6 @@ else
 	export Architecture=Intel
 	export HOMEBREW_ROOT=/usr/local
 fi
-
 
 # Check that the system is ready to build
 #
@@ -398,7 +395,7 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 
     show_host_status
 
-	logger "Complete" I
+	logger "System Cleanup Complete" I
 
 	logger
 	logger "###############################################" N
@@ -408,7 +405,6 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	logger
 
 fi
-
 
 logger "You can Exit now or Continue to install HomeBrew etc" Q
 
@@ -422,7 +418,7 @@ fi
 
 logger "Continuing with computer build process." I
 
-if [ ! -d ${HOMEBREW_ROOT} ]; then
+if [ ! -d ${HOMEBREW_ROOT}/bin/brew ]; then
 	logger "We are about to install HomeBrew." I
 
 	#Install Homebrew
@@ -440,6 +436,7 @@ if [ ! -d ${HOMEBREW_ROOT} ]; then
 	export LIBRARY_PATH=${HOMEBREW_ROOT}/lib
 	#export PATH=${HOMEBREW_ROOT}/bin:${HOMEBREW_ROOT}/sbin:${PATH}
 
+	setup_dev_symlinks brewrc.sh
 	logger "Sourcing the new brewrc.sh file, to make brew work correctly." I
 	source ${BOOTENV}/brewrc.sh
 
@@ -459,7 +456,7 @@ if [ ! -d ${HOMEBREW_ROOT} ]; then
 	fi
 fi
 
-logger "Basic Build is now Complete" I
+logger "Basic Homebrew Build is now Complete" I
 
 logger
 logger "###############################################" N
@@ -468,49 +465,52 @@ logger "#              to suit your needs             #" N
 logger "###############################################" N
 logger
 
-
-
-
-if [ ! -d ${HOMEBREW_ROOT} ]; then
-	logger "Do you want to build a Groovy Dev Environment? (y/n)" Q
-	read "reply?Install? (y/n) "
-	if [[ "$reply" =~ ^[yY]$ ]]; then
-  	install_via_brew brew-groovy.cfg
-  	GROOVYDEV='Y'
-	fi
+logger "Do you want to build a Groovy Dev Environment? (y/n)" Q
+read "reply?Install? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	install_via_brew brew-groovy.cfg
+	setup_dev_symlinks groovyrc.sh
+	GROOVYDEV='Y'
 fi
 
 logger "Do you want to build a HOMEY Dev Environment? (y/n)" Q
 read "reply?Install? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
-  install_via_brew brew-homey.cfg
-  HOMEYDEV='Y'
+	install_via_brew brew-homey.cfg
+	setup_dev_symlinks homeyrc.sh
+	HOMEYDEV='Y'
 fi
 
 logger "Do you want to build a GOLANG Dev Environment? (y/n)" Q
 read "reply?Install? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
-  install_via_brew brew-go.cfg
-  GOLANGDEV='Y'
+	install_via_brew brew-go.cfg
+	setup_dev_symlinks gorc.sh
+	GOLANGDEV='Y'
 fi
 
+logger "Do you want to build a PYTHON Dev Environment? (y/n)" Q
+read "reply?Install? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	install_via_brew brew-python.cfg
+	setup_dev_symlinks pythonrc.sh
+	PYTHONDEV='Y'
+fi
 
 logger "Do you want to install a PHP environment? (y/n)" Q
 read "reply?Continue? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
-
 	install_via_brew brew-php.cfg
+	setup_dev_symlinks phprc.sh
+	PHPDEV='Y'
+fi
 
-	#Setup Sites
-	if [ ! -d ${HOME}/Sites ]; then
-		logger "Creating ${HOME}/Sites directory" W
-		mkdir ${HOME}/Sites
-	else
-		logger "${HOME}/Sites directory already exists" I
-	fi
-	
-   PHPDEV='Y'
-
+#Setup Sites Directory
+if [ ! -d ${HOME}/Sites ]; then
+	logger "Creating ${HOME}/Sites directory" W
+	mkdir ${HOME}/Sites
+else
+	logger "${HOME}/Sites directory already exists" I
 fi
 
 logger "You can configure git or leave the existing config alone..." Q
@@ -519,11 +519,13 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	git config --global color.ui true
 	git config --global user.name "David Cheetham"
 	git config --global user.email "mr_klaatu.com"
-	ssh-keygen -t rsa -C "mr_klaatu.com"
 fi
 
-# Create all the symlinks from the dev directory to the home directory.
-setup_env_symlinks
+logger "You can regenerate ssh keys or leave the existing keys alone..." Q
+read "reply?Configure? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	ssh-keygen -t rsa -C "mr_klaatu.com"
+fi
 
 logger "Do you want to setup OSX defaults? (y/n)" Q
 read "reply?Continue? (y/n) "
@@ -534,8 +536,11 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	logger 
 fi
 
+logger "Sourcing .kshrc to setup the new environment" I
 source ${HOME}/.zshrc > /dev/null
 
+brew cleanup
+brew doctor
 show_host_status
 
 logger

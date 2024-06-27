@@ -74,6 +74,16 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
     fi
   fi
 
+  # Setup Python (if its installed)
+  if [ -L ${HOMEBREW_ROOT}/bin/python3 ]
+  then
+    if [ -f ${HOME}/.pythonrc ]
+    then
+      source ${HOME}/.pythonrc
+      echo "Python Initialised"
+    fi
+  fi
+
   # Setup nvm (if its installed)
   if (( $+commands[nvm] ))
   then
@@ -96,11 +106,8 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
   fi    
 
   # Setup Groovy (if its installed)
-  if [ -f ${HOMEBREW_ROOT}/bin/groovy ]
+  if [ -L ${HOMEBREW_ROOT}/bin/groovy ]
   then  
-   
-    echo "Groovy Initialised"
-
     if [ -f ${HOME}/.groovyrc ]
     then  
       source ${HOME}/.groovyrc
@@ -117,7 +124,7 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
   fi
 
   # Setup PHP (if its installed)
-  if [ -f ${HOMEBREW_ROOT}bin/php ]
+  if [ -L ${HOMEBREW_ROOT}bin/php ]
   then  
     source ${HOME}/.phprc
     echo "PHP Initialised"
