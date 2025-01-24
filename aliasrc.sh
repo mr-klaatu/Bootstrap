@@ -9,6 +9,7 @@ then
   # For a full list of active aliases, run `alias`.
   #
   alias ls="ls -G"
+  alias lt="ls -ltras"
 
   alias zshconfig="vim ${HOME}/.zshrc"
   alias zshrc="source ${HOME}/.zshrc"
@@ -31,5 +32,5 @@ then
 
   alias clearcache="${HOME}/bin/ClearCache.sh"
   
-
+  alias go="source ${HOME}/bin/go.sh"
 fi

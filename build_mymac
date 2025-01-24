@@ -37,9 +37,20 @@ initialise() {
 		unlink ${HOME}/Developer              
 	fi
 	if [[ -d ${HOME}/Developer ]]; then
-		mv -f ${HOME}/Developer ${HOME}/Developer-Original             
+		mv -f ${HOME}/Developer ${HOME}/Developer-BACKUP             
 	fi
 	ln -sf ${HOME}/Documents/Developer ${HOME}/Developer
+
+    DEVVALUE=`ls -ltra ${HOME}/Developer | rev | cut -d ' ' -f 1 | rev`
+	logger "The actual value of ${HOME}/Developer is ${DEVVALUE}" I
+
+	# These environment variables and links should be set, but on a brand new build these might need initialising...
+	if [[ -z ${DEVENV} ]]; then export DEVENV=${HOME}/Developer; fi
+	if [[ -z ${BOOTENV} ]]; then export BOOTENV=${HOME}/Developer/Bootstrap; fi
+
+	logger "The value of DEVENV is `echo ${DEVENV}`" I
+	logger "The value of BOOTENV is `echo ${BOOTENV}`" I
+
 } # initialise()
 
 setup_std_symlinks() {
@@ -99,13 +110,14 @@ show_host_status() {
 		logger "This machine is currently running a standard OSX environment." I
 		# see what this is built to do
 		if [[ -z "${GOBUILD}" ]]; then  # Check for the homebrew root env...
-			# We are NOT running an enhanced Homebrew Environment... 
+			# We are NOT running an enhanced Homebrew Environment... y
 			logger "This machine is currently running a standard OSX environment." I
 		fi
 	else
-		if [ -d ${HOMEBREW_ROOT}/bin ]; then   # Check for the homebrew bin directory...
+		if [ -f ${HOMEBREW_ROOT}/bin/brew ]; then   # Check for the homebrew bin directory...
 			# We are running an enhanced Homebrew Environment... 
 			logger "This machine is currently running an enhanced HOMEBREW environment." I
+			logger "HOMEBREW_ROOT is set to ${HOMEBREW_ROOT}." I
 		else
 			# We are NOT running an enhanced Homebrew Environment... 
 			logger "This machine is currently running a standard OSX environment." I
@@ -115,20 +127,14 @@ show_host_status() {
 } # show_host_status()
 
 check_devenv_link () {
-	logger "Checking status of the DEVENV link" I
+	logger "Checking status of the DEVENV Environment Variable" I
 	LINKSTATUS=0
 
-	if [ -L ${DEVENV} ] ; then
+	if [[ -d "${DEVENV}" && -L "${DEVENV}" ]] ; then
 		logger "The DEVENV link is set up correctly" I
 		LINKSTATUS=1
 	else
 		logger "The DEVENV link is broken" E
-	fi
-		
-	if [ -d ${DEVENV} ] ; then
-		logger "The DEVENV link is set up as a physical folder" WE
-	else
-		logger "The DEVENV link is missing" E
 	fi
 	
 	if [[ ${LINKSTATUS} == 0 ]]
@@ -261,13 +267,14 @@ BCKDATE=`date +%Y%m%d%H%M`
 # standard files used in all configurations
 DOTFILES=('gitconfig.sh' 'osxrc.sh' 'vimrc.sh' 'zshrc.sh' 'aliasrc.sh')
 # specific files files used in some configurations
-ENVDOTFILES=('homeyrc.sh' 'groovyrc.sh' 'phprc.sh' 'gorc.sh' 'pythonrc.sh')
+ENVDOTFILES=('homeyrc.sh' 'groovyrc.sh' 'phprc.sh' 'gorc.sh' 'node.sh' 'pythonrc.sh' 'nvmrc.sh' 'brewrc.sh')
 
 GOLANGDEV='N'
 HOMEYDEV='N'
 PHPDEV='N'
 GROOVYDEV='N'
 PYTHONDEV='N'
+NODEDEV='N'
 
 # Add environment settings for HOMEBREW
 if [ `/usr/bin/uname -p | /usr/bin/grep -i arm` ]; then
@@ -333,24 +340,28 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 
 	logger "Here we go..." I
 
-	logger "Deleting HomeBrew Installation" I
-	if [ ! -d ${HOMEBREW_ROOT} ]; then
-		logger "Brew is not installed" W
+	if [ ! -f ${HOMEBREW_ROOT}/bin/brew ]; then
+		logger "HomeBrew is not installed" W
 	else
-		logger "Brew being uninstalled" I
-		echo $sudoPW | sudo -S /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall.sh)"
+		logger "HomeBrew is installed" W
+
+		if [ -f ${HOMEBREW_ROOT}/bin/brew ]; then
+        	logger "Deleting HomeBrew Installation" I
+        	echo $sudoPW | sudo -S /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall.sh)"
+		fi
 	fi
 
-	logger "Deleting any remaining Homebrew directories or local customisations" I
 	if [ -d ${/opt/homebrew} ]; then
+		logger "Deleting any remaining Homebrew directories or local customisations" I
 		echo $sudoPW | sudo -S /bin/rm -rf ${/opt/homebrew}
+		unset HOMEBREW_ROOT
 	else
-		logger "${/opt/homebrew} does not exist" I	
+		logger "The folder /opt/homebrew does not exist" I	
 	fi
 	if [ -d ${/usr/local/} ]; then
 		echo $sudoPW | sudo -S /bin/rm -rf ${/usr/local/}
 	else
-		logger "${/usr/local/} does not exist" I	
+		logger "The folder /usr/local does not exist" I	
 	fi
 
 	logger "Deleting OhMyZSH Installation" I
@@ -379,7 +390,7 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	done
 	
 	logger "Resetting shell back to Mac Supplied version of ZSH" I
-	echo $sudoPW | sudo -S chsh -s /bin/zsh ${USER}
+	echo $sudoPW | sudo -S chsh -s /bin/zsh ${USER} >> /dev/null
 	
 	logger "Removing the Brew version of .zshrc" I
 	if [[ -L ${HOME}/.zshrc ]]; then
@@ -424,14 +435,6 @@ if [ ! -d ${HOMEBREW_ROOT}/bin/brew ]; then
 	#Install Homebrew
 	/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-	#Validate HomeBrew Environment
-	#if [ "${Architecture}" = "Arm" ]; then
-    # 		echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
-	#	eval "$(/opt/homebrew/bin/brew shellenv)"  
-	#else
-	#	echo 'eval "$(/usr/local/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
-	#	eval "$(/usr/local/bin/brew shellenv)" n
-	#fi
 	export CPATH=${HOMEBREW_ROOT}/include
 	export LIBRARY_PATH=${HOMEBREW_ROOT}/lib
 	#export PATH=${HOMEBREW_ROOT}/bin:${HOMEBREW_ROOT}/sbin:${PATH}
@@ -455,7 +458,6 @@ if [ ! -d ${HOMEBREW_ROOT}/bin/brew ]; then
 		CASK_INSTALLED="true"
 	fi
 fi
-
 logger "Basic Homebrew Build is now Complete" I
 
 logger
@@ -464,6 +466,9 @@ logger "#     From now on you can tailor the system   #" N
 logger "#              to suit your needs             #" N
 logger "###############################################" N
 logger
+
+#logger "Adding command for Visual Studio Code" I
+#ln -sf /Applications/Visual Studio Code.app/Contents/Resources/app/bin/code /usr/local/bin/code
 
 logger "Do you want to build a PYTHON Dev Environment? (y/n)" Q
 read "reply?Install? (y/n) "
@@ -476,15 +481,27 @@ fi
 logger "Do you want to build a Groovy Dev Environment? (y/n)" Q
 read "reply?Install? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
-	install_via_brew brew-groovy.cfg
+	install-groovy.ksh
 	setup_dev_symlinks groovyrc.sh
 	GROOVYDEV='Y'
+fi
+
+logger "Do you want to build a NODE.js Dev Environment? (y/n)" Q
+read "reply?Install? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	install_via_brew brew-node.cfg
+	setup_dev_symlinks noderc.sh
+	NODEDEV='Y'
 fi
 
 logger "Do you want to build a HOMEY Dev Environment? (y/n)" Q
 read "reply?Install? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
-	install_via_brew brew-homey.cfg
+    if [[ "$NODEDEV" == "N" ]]; then
+		install_via_brew brew-homey.cfg
+		setup_dev_symlinks noderc.sh
+	    NODEDEV='Y'
+	fi
 	setup_dev_symlinks homeyrc.sh
 	HOMEYDEV='Y'
 fi
@@ -550,4 +567,4 @@ logger "#              your Apple OSX                 #" N
 logger "###############################################" N
 logger
 
-exit 0
+exit

@@ -6,4 +6,3 @@ if [ "${Architecture}" = "Arm" ]; then
 else
     eval "$(/usr/local/bin/brew shellenv)"
 fi
-

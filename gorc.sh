@@ -13,3 +13,4 @@ if [ ! -d $GOPATH/log ]; then mkdir -p $GOPATH/log; fi
 export APP_DB_USERNAME=postgres
 export APP_DB_PASSWORD=
 export APP_DB_NAME=postgres
+

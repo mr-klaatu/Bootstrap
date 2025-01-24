@@ -23,10 +23,12 @@ then
   export Architecture=Arm
   export ARCHFLAGS="-arch arm64"
   export HOMEBREW_ROOT=/opt/homebrew
+  export LOCAL_PATH=/opt
 else
   export Architecture=Intel
   export ARCHFLAGS="-arch x86_64"
   export HOMEBREW_ROOT=/usr/local
+  export LOCAL_PATH=/usr/local
 fi
 
 if [ -d ${HOMEBREW_ROOT} ]
@@ -40,8 +42,7 @@ fi
 
 if [[ "$BREW" == "YES" ]]
 then
-echo "================================================================"
-echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEBREW_ROOT of ${HOMEBREW_ROOT}..."
+
   #
   # All the code below runs using the capbilites of HOMEBREW addons.
   #
@@ -82,13 +83,23 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
     fi
   fi
 
-  # Setup nvm (if its installed)
-  if (( $+commands[nvm] ))
+  # Setup NODE.js (if its installed)
+  if (( $+commands[node] ))
   then
-    if [ -f ${HOME}/.nvmrc ]
+    if [ -f ${HOME}/.noderc ]
     then
-      source ${HOME}/.nvmrc
-      echo "NVM Initialised"
+      source ${HOME}/.noderc
+      echo "NODE Initialised"
+    fi
+  fi
+
+  # Setup HOMEY.js (if its installed)
+  if (( $+commands[node] ))
+  then
+    if [ -f ${HOME}/.homeyrc ]
+    then
+      source ${HOME}/.homeyrc
+      echo "HOMEY Initialised"
     fi
   fi
 
@@ -104,7 +115,7 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
   fi    
 
   # Setup Groovy (if its installed)
-  if [ -L ${HOMEBREW_ROOT}/bin/groovy ]
+  if [ -d ${LOCAL_PATH}/groovy/current/bin ]
   then  
     if [ -f ${HOME}/.groovyrc ]
     then  
@@ -129,8 +140,7 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
   fi
 
 else
-  echo "================================================================"
-  echo "Running a Standard OSX environemnt on ($Architecture) Architecture..."
+
   #
   # Stuff in here gets set only for standard installs.
   #
@@ -152,7 +162,7 @@ fi
 export DEVENV=${HOME}/Developer
 
 # Location of bootstrap scripts and utilities
-export BOOTENV=${DEVENV}/Bootstrap
+export BOOTENV=${HOME}/Developer/Bootstrap
 
 # Generic configuration goes in here...
 export PATH="${HOME}/bin:${PATH}"
@@ -232,6 +242,7 @@ then
   echo "================================================================"
   echo "This machine is `/usr/bin/uname -n`, Running on $Architecture Architecture"
   echo "Current default SHELL is $(which zsh) at the version of $(zsh --version)"
+  echo "Running a HOMEBREW environemnt at ${HOMEBREW_ROOT}..."
   echo "The current user is ${USER} in ${PWD}"
   echo "... zshrc complete."
   echo "================================================================"
