@@ -50,8 +50,6 @@ echo "Running a HOMEBREW environemnt on (${Architecture}) Architecture and HOMEB
   #
   if [ -f ${HOME}/.brewrc ]
   then
-
-    echo "export HOMEBREW_NO_INSTALL_CLEANUP=1" >> ${HOME}/.brewrc
     source ${HOME}/.brewrc
     echo "Homebrew Initialised"
   fi

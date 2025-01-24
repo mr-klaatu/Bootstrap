@@ -27,6 +27,9 @@ then
   alias pip="pip3"
   alias esptool="esptool.py"
 
-  alias esp-idf="cd $HOME/Developer/ESP/esp-idf;. $HOME/Developer/ESP/esp-idf/export.sh"
- 
+  alias esp-idf="cd ${HOME}/Developer/ESP/esp-idf;. ${HOME}/Developer/ESP/esp-idf/export.sh"
+
+  alias clearcache="${HOME}/bin/ClearCache.sh"
+  
+
 fi

@@ -425,13 +425,13 @@ if [ ! -d ${HOMEBREW_ROOT}/bin/brew ]; then
 	/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 	#Validate HomeBrew Environment
-	if [ "${Architecture}" = "Arm" ]; then
-		echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
-		eval "$(/opt/homebrew/bin/brew shellenv)"  
-	else
-		echo 'eval "$(/usr/local/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
-		eval "$(/usr/local/bin/brew shellenv)" n
-	fi
+	#if [ "${Architecture}" = "Arm" ]; then
+    # 		echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
+	#	eval "$(/opt/homebrew/bin/brew shellenv)"  
+	#else
+	#	echo 'eval "$(/usr/local/bin/brew shellenv)"' > ${BOOTENV}/brewrc.sh
+	#	eval "$(/usr/local/bin/brew shellenv)" n
+	#fi
 	export CPATH=${HOMEBREW_ROOT}/include
 	export LIBRARY_PATH=${HOMEBREW_ROOT}/lib
 	#export PATH=${HOMEBREW_ROOT}/bin:${HOMEBREW_ROOT}/sbin:${PATH}
@@ -465,6 +465,14 @@ logger "#              to suit your needs             #" N
 logger "###############################################" N
 logger
 
+logger "Do you want to build a PYTHON Dev Environment? (y/n)" Q
+read "reply?Install? (y/n) "
+if [[ "$reply" =~ ^[yY]$ ]]; then
+	install_via_brew brew-python.cfg
+	setup_dev_symlinks pythonrc.sh
+	PYTHONDEV='Y'
+fi
+
 logger "Do you want to build a Groovy Dev Environment? (y/n)" Q
 read "reply?Install? (y/n) "
 if [[ "$reply" =~ ^[yY]$ ]]; then
@@ -487,14 +495,6 @@ if [[ "$reply" =~ ^[yY]$ ]]; then
 	install_via_brew brew-go.cfg
 	setup_dev_symlinks gorc.sh
 	GOLANGDEV='Y'
-fi
-
-logger "Do you want to build a PYTHON Dev Environment? (y/n)" Q
-read "reply?Install? (y/n) "
-if [[ "$reply" =~ ^[yY]$ ]]; then
-	install_via_brew brew-python.cfg
-	setup_dev_symlinks pythonrc.sh
-	PYTHONDEV='Y'
 fi
 
 logger "Do you want to install a PHP environment? (y/n)" Q

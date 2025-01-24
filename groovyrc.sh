@@ -6,6 +6,7 @@ if [ ! -d $GROOVYPATH/bin ]; then mkdir -p $GROOVYPATH/bin; fi
 if [ ! -d $GROOVYPATH/log ]; then mkdir -p $GROOVYPATH/log; fi
 
 export GROOVY_HOME=/opt/homebrew/opt/groovy/libexec
+export GRAILS_HOME=/opt/homebrew/opt/grails/libexec
 
 export PATH=${PATH}:${GROOVYPATH}/bin
-#export PATH="${HOMEBREW_ROOT}/bin/groovy:${PATH}"
+export PATH="${HOMEBREW_ROOT}/bin/groovy:${PATH}"
